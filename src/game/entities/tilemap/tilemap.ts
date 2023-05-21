@@ -21,14 +21,14 @@ export default class BasicTilemap {
     this.scene = scene as MainScene;
     //The map keeping track of all the layers
     this.floorMap = scene.make.tilemap({
-      tileWidth: 32,
-      tileHeight: 32,
+      tileWidth: scene.cellWidth,
+      tileHeight: scene.cellHeight,
       width: scene.colCount,
       height: scene.rowCount,
     });
     this.wallMap = scene.make.tilemap({
-      tileWidth: 32,
-      tileHeight: 32,
+      tileWidth: scene.cellWidth,
+      tileHeight: scene.cellHeight,
       width: scene.colCount,
       height: scene.rowCount,
     });
@@ -71,19 +71,19 @@ export default class BasicTilemap {
     this.placeInitialWalls();
 
     // Define the size of the rectangle
-    const rectangleWidth = 40;
-    const rectangleHeight = 35;
+    // const rectangleWidth = 40;
+    // const rectangleHeight = 35;
 
     // Calculate the starting position of the rectangle
-    const startX = this.scene.player.col - Math.floor(rectangleWidth / 2);
-    const startY = this.scene.player.row - Math.floor(rectangleHeight / 2);
+    // const startX = this.scene.player.col - Math.floor(rectangleWidth / 2);
+    // const startY = this.scene.player.row - Math.floor(rectangleHeight / 2);
 
     // Loop through the tiles and call the placeEmptyFloorTile function
-    for (let x = startX; x < startX + rectangleWidth; x++) {
-      for (let y = startY; y < startY + rectangleHeight; y++) {
-        this.placeEmptyFloorTile(x, y);
-      }
-    }
+    // for (let x = startX; x < startX + rectangleWidth; x++) {
+    //   for (let y = startY; y < startY + rectangleHeight; y++) {
+    //     this.placeEmptyFloorTile(x, y);
+    //   }
+    // }
   }
 
   placeVoid(col: number, row: number) {
@@ -104,7 +104,7 @@ export default class BasicTilemap {
     const newTile = this.floor.putTileAt(1, col, row);
     newTile.setCollision(false, false, false, false);
     newTile.properties = { name: "Empty" };
-    newTile.alpha = 0.85;
+    newTile.alpha = 0.65;
   }
 
   placeIceTile(col: number, row: number) {
@@ -132,7 +132,7 @@ export default class BasicTilemap {
   }
 
   addCornerPiece(col: number, row: number) {
-    const { cellSize } = this.scene;
+    const { cellWidth, cellHeight } = this.scene;
     const iceTile = this.floor.getTileAt(col, row);
     const cornerPiece = iceTile.properties.cornerPiece;
     if (cornerPiece) {
@@ -148,8 +148,8 @@ export default class BasicTilemap {
       iceTile.properties.cornerPiece = new CornerPiece(
         this.scene,
         "TopLeft",
-        col * cellSize + cellSize / 2,
-        row * cellSize + cellSize / 2,
+        col * cellWidth + cellWidth / 2,
+        row * cellHeight + cellHeight / 2,
         row,
         col,
         iceTile
@@ -157,7 +157,7 @@ export default class BasicTilemap {
     }
   }
   addOil(col: number, row: number) {
-    const { cellSize } = this.scene;
+    const { cellHeight, cellWidth } = this.scene;
     const floorTile = this.floor.getTileAt(col, row);
 
     if (
@@ -167,8 +167,8 @@ export default class BasicTilemap {
     ) {
       floorTile.properties.oil = new OilSpill(
         this.scene,
-        col * cellSize + cellSize / 2,
-        row * cellSize + cellSize / 2,
+        col * cellWidth + cellWidth / 2,
+        row * cellHeight + cellHeight / 2,
         row,
         col
       );
@@ -226,13 +226,13 @@ export default class BasicTilemap {
     }
   }
   addWallCracks(col: number, row: number) {
-    const { cellSize } = this.scene;
+    const { cellWidth, cellHeight } = this.scene;
     const wall = this.walls.getTileAt(col, row);
     if (wall.properties.cracks) return;
     wall.properties.cracks = new Cracks(
       this.scene,
-      col * cellSize + cellSize / 2,
-      row * cellSize + cellSize / 2,
+      col * cellWidth + cellWidth / 2,
+      row * cellHeight + cellHeight / 2,
       row,
       col
     );
@@ -240,15 +240,15 @@ export default class BasicTilemap {
 
   placeInitialWalls() {
     this.walls.forEachTile((tile) => {
-      tile.properties.connectedTo = {
-        top: true,
-        bottom: true,
-        left: true,
-        right: true,
-      };
-      this.placeWall(tile.x, tile.y);
+      // tile.properties.connectedTo = {
+      //   top: true,
+      //   bottom: true,
+      //   left: true,
+      //   right: true,
+      // };
+      // this.placeWall(tile.x, tile.y);
 
-      // this.placeEmptyFloorTile(tile.x,tile.y)
+      this.placeEmptyFloorTile(tile.x, tile.y);
     });
   }
 }

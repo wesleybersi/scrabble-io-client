@@ -11,20 +11,20 @@ export default function makeMove(
   crate.isMoving = true;
   crate.direction = direction;
 
-  const { portals, allCrates, cellSize, resetAll } = crate.scene;
+  const { portals, allCrates, cellWidth, cellHeight, resetAll } = crate.scene;
   crate.target = { row: crate.row, col: crate.col, x: crate.x, y: crate.y };
 
   if (direction === "up") {
-    crate.target.y -= cellSize;
+    crate.target.y -= cellHeight;
     crate.target.row--;
   } else if (direction === "down") {
-    crate.target.y += cellSize;
+    crate.target.y += cellHeight;
     crate.target.row++;
   } else if (direction === "left") {
-    crate.target.x -= cellSize;
+    crate.target.x -= cellWidth;
     crate.target.col--;
   } else if (direction === "right") {
-    crate.target.x += cellSize;
+    crate.target.x += cellWidth;
     crate.target.col++;
   }
 
@@ -37,7 +37,9 @@ export default function makeMove(
     y: crate.target.y,
     ease: "Linear",
     duration: duration,
-
+    onStart: () => {
+      //
+    },
     onComplete: () => {
       //   if (crate.portalTrigger) {
       //     const { to, connectedTo, exiting, entering } = crate.portalTrigger;
@@ -102,7 +104,7 @@ export function moveComplete(crate: Crate) {
   }
   crate.target = null;
 
-  crate.setDepth(5);
+  crate.setDepth(0);
 
   const tile = floor.getTileAt(crate.col, crate.row);
   if (tile) {
@@ -117,6 +119,7 @@ export function moveComplete(crate: Crate) {
             scale: 0,
             duration: 1500,
             ease: "Quad.Out",
+
             onUpdate: () => {
               if (tween.progress > 0.5) {
                 crate.setDepth(0);

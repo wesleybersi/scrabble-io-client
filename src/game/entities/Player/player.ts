@@ -1,5 +1,5 @@
 import Portal from "../portal";
-import Crosshair from "../crosshair";
+
 import MainScene from "../../scenes/MainScene";
 // import placePortal from "./portals/placePortal";
 import { Clone } from "./clone";
@@ -25,7 +25,6 @@ export class Player extends Phaser.GameObjects.Sprite {
   highlight!: Phaser.GameObjects.Graphics;
   initialMoveDuration = 200;
   moveDuration = 200;
-  crosshair!: Crosshair;
   moving = { left: false, right: false, up: false, down: false };
   forceMovement = { left: false, right: false, up: false, down: false };
   lastMove: Direction = "up";
@@ -78,8 +77,9 @@ export class Player extends Phaser.GameObjects.Sprite {
     this.name = "Player";
     this.portalClone = null;
     this.portalReflection = null;
-    this.row = Math.floor(y - scene.cellSize / 2) / scene.cellSize;
-    this.col = Math.floor(x - scene.cellSize / 2) / scene.cellSize;
+    this.row = Math.floor(y - scene.cellHeight / 2) / scene.cellHeight;
+    this.col = Math.floor(x - scene.cellWidth / 2) / scene.cellWidth;
+    this.y -= scene.cellHeight / 2;
     this.startTile = new Entrance(scene, this.row, this.col);
     this.origin = { row: this.row, col: this.col };
     this.holding = { top: null, right: null, bottom: null, left: null };
@@ -96,7 +96,6 @@ export class Player extends Phaser.GameObjects.Sprite {
     this.createAnimations();
 
     scene.add.existing(this);
-    this.crosshair = new Crosshair(scene, this);
   }
   enableMovement() {
     this.scene.input.keyboard?.on("keydown", (event: KeyboardEvent) => {
@@ -266,11 +265,30 @@ export class Player extends Phaser.GameObjects.Sprite {
       repeat: -1,
     });
     this.anims.create({
-      key: "Moving",
-      frames: this.anims.generateFrameNumbers("player", { start: 0, end: 3 }),
+      key: "moving-up",
+      frames: this.anims.generateFrameNumbers("player", { start: 0, end: 2 }),
       frameRate: 12,
       repeat: -1,
     });
+    this.anims.create({
+      key: "moving-right",
+      frames: this.anims.generateFrameNumbers("player", { start: 3, end: 5 }),
+      frameRate: 12,
+      repeat: -1,
+    });
+    this.anims.create({
+      key: "moving-down",
+      frames: this.anims.generateFrameNumbers("player", { start: 6, end: 8 }),
+      frameRate: 12,
+      repeat: -1,
+    });
+    this.anims.create({
+      key: "moving-left",
+      frames: this.anims.generateFrameNumbers("player", { start: 9, end: 11 }),
+      frameRate: 12,
+      repeat: -1,
+    });
+
     this.anims.create({
       key: "Pushing",
       frames: this.anims.generateFrameNumbers("player", { start: 0, end: 3 }),
@@ -296,8 +314,9 @@ export class Player extends Phaser.GameObjects.Sprite {
   }
 
   place(x: number, y: number) {
-    this.row = Math.floor(y - this.scene.cellSize / 2) / this.scene.cellSize;
-    this.col = Math.floor(x - this.scene.cellSize / 2) / this.scene.cellSize;
+    this.row =
+      Math.floor(y - this.scene.cellHeight / 2) / this.scene.cellHeight;
+    this.col = Math.floor(x - this.scene.cellWidth / 2) / this.scene.cellWidth;
   }
 
   placePortal(type: "a" | "b") {
@@ -311,12 +330,12 @@ export class Player extends Phaser.GameObjects.Sprite {
   }
 
   resetToOrigin() {
-    const { cellSize } = this.scene;
+    const { cellWidth, cellHeight } = this.scene;
 
     this.row = this.origin.row;
     this.col = this.origin.col;
-    this.x = this.origin.col * cellSize + cellSize / 2;
-    this.y = this.origin.row * cellSize + cellSize / 2;
+    this.x = this.origin.col * cellWidth + cellWidth / 2;
+    this.y = this.origin.row * cellHeight;
     this.holding = Object.assign({}, allCardinalsNull);
     this.moving = Object.assign({}, allDirectionsFalse);
     this.forceMovement = Object.assign({}, allDirectionsFalse);
@@ -327,73 +346,71 @@ export class Player extends Phaser.GameObjects.Sprite {
   }
 
   update() {
-    const movementToAngle = (invert?: boolean) => {
-      for (const [direction, moving] of Object.entries(this.moving)) {
-        if (moving) {
-          const angle = directionToAngle(direction as Direction, invert);
-          this.animateToAngle(angle);
-          return;
-        }
-      }
-      for (const [direction, moving] of Object.entries(this.forceMovement)) {
-        if (moving) {
-          const angle = directionToAngle(direction as Direction, invert);
-          this.animateToAngle(angle, this.state === "Sliding" ? 4 : undefined);
-          return;
-        }
-      }
-      const lastAngle = directionToAngle(this.lastMove);
-      this.animateToAngle(lastAngle);
-    };
+    // const movementToAngle = (invert?: boolean) => {
+    //   for (const [direction, moving] of Object.entries(this.moving)) {
+    //     if (moving) {
+    //       const angle = directionToAngle(direction as Direction, invert);
+    //       this.animateToAngle(angle);
+    //       return;
+    //     }
+    //   }
+    //   for (const [direction, moving] of Object.entries(this.forceMovement)) {
+    //     if (moving) {
+    //       const angle = directionToAngle(direction as Direction, invert);
+    //       this.animateToAngle(angle, this.state === "Sliding" ? 4 : undefined);
+    //       return;
+    //     }
+    //   }
+    //   const lastAngle = directionToAngle(this.lastMove);
+    //   this.animateToAngle(lastAngle);
+    // };
 
+    this.setDepth(this.row);
     switch (this.state) {
       case "Idle":
         {
           this.deadCounter = 0;
-          this.setDepth(2);
           this.alpha = 1;
           this.scene.game.canvas.style.cursor = "auto";
-          this.anims.play("Idle");
+          this.anims.pause();
+          this.anims.restart();
 
           const lastAngle = directionToAngle(this.lastMove);
-          this.animateToAngle(lastAngle);
+          // this.animateToAngle(lastAngle);
           this.hasReset = false;
         }
         break;
 
+      case "Pushing":
       case "Moving":
-        if (this.anims.currentAnim?.key !== "Moving") {
-          this.anims.play("Moving");
+        for (const [direction, moving] of Object.entries(this.moving)) {
+          if (moving) {
+            const animation = `moving-${direction}`;
+            if (this.anims.currentAnim?.key !== animation)
+              this.anims.play(animation);
+          }
         }
-        movementToAngle();
+
         break;
       case "Sliding":
         this.anims.play("Idle");
-        movementToAngle();
+        // movementToAngle();
         break;
       case "Holding":
         this.scene.game.canvas.style.cursor = "grab";
         this.anims.play("Holding");
         break;
-      case "Pushing":
-        if (this.anims.currentAnim?.key !== "Pushing") {
-          this.anims.play("Pushing");
-        }
-        movementToAngle();
-        break;
+
       case "Pulling":
         if (this.anims.currentAnim?.key !== "Pulling") {
           this.anims.play("Pulling");
         }
-        movementToAngle(true);
         this.scene.game.canvas.style.cursor = "grab";
         break;
       case "Falling":
-        movementToAngle();
         break;
       case "Dead":
         console.warn("YOU FUCKING DIED");
-        // this.alpha = 0.5;
         this.anims.play("Idle");
         this.deadCounter++;
         if (this.deadCounter > 200) {
@@ -424,8 +441,8 @@ export class Player extends Phaser.GameObjects.Sprite {
       if (holding) {
         const direction = cardinalToDirection(side as Cardinal);
         this.lastMove = direction;
-        const angle = directionToAngle(direction);
-        this.animateToAngle(angle);
+        // const angle = directionToAngle(direction);
+        // this.animateToAngle(angle);
         break;
       }
     }
@@ -469,25 +486,25 @@ export class Player extends Phaser.GameObjects.Sprite {
     }
   }
 
-  animateToAngle(targetAngle: number, rotationSpeed = 16) {
-    // Calculate the difference between the angles
-    let diff = targetAngle - this.angle;
+  // animateToAngle(targetAngle: number, rotationSpeed = 16) {
+  //   // Calculate the difference between the angles
+  //   let diff = targetAngle - this.angle;
 
-    // Handle cases where the difference is greater than 180 degrees
-    if (diff > 180) {
-      diff -= 360;
-    } else if (diff < -180) {
-      diff += 360;
-    }
+  //   // Handle cases where the difference is greater than 180 degrees
+  //   if (diff > 180) {
+  //     diff -= 360;
+  //   } else if (diff < -180) {
+  //     diff += 360;
+  //   }
 
-    if (diff !== 0) {
-      // Calculate the rotation direction and amount
-      const rotationDir = diff > 0 ? 1 : -1;
-      const rotationAmount = Math.min(Math.abs(diff), rotationSpeed);
+  //   if (diff !== 0) {
+  //     // Calculate the rotation direction and amount
+  //     const rotationDir = diff > 0 ? 1 : -1;
+  //     const rotationAmount = Math.min(Math.abs(diff), rotationSpeed);
 
-      // Apply the rotation
-      this.angle += rotationDir * rotationAmount;
-      this.angle = ((this.angle % 360) + 360) % 360;
-    }
-  }
+  //     // Apply the rotation
+  //     this.angle += rotationDir * rotationAmount;
+  //     this.angle = ((this.angle % 360) + 360) % 360;
+  //   }
+  // }
 }

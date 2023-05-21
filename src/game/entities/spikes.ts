@@ -23,23 +23,23 @@ export default class Spikes extends Phaser.GameObjects.Sprite {
     this.setOrigin(0.5, 0.5);
     this.setDepth(200);
 
-    const { cellSize } = this.scene;
+    const { cellWidth, cellHeight } = this.scene;
     switch (this.facing) {
       case "up":
         this.angle = 0;
-        this.yOffset = -cellSize;
+        this.yOffset = -cellHeight;
         break;
       case "down":
         this.angle = 180;
-        this.yOffset = cellSize;
+        this.yOffset = cellHeight;
         break;
       case "left":
         this.angle = 270;
-        this.xOffset = -cellSize;
+        this.xOffset = -cellWidth;
         break;
       case "right":
         this.angle = 90;
-        this.xOffset = cellSize;
+        this.xOffset = cellWidth;
         break;
     }
 

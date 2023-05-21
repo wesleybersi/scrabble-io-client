@@ -114,7 +114,7 @@ export function setPortalReflection(
 export function inFrontOfPortal(player: Player) {
   if (!player.portalReflection) return;
 
-  const { cellSize } = player.scene;
+  const { cellWidth, cellHeight } = player.scene;
   const { from, to, portal, inFront, movementType } = player.portalReflection;
 
   //Eventually turn new Player into new Clone. Right now fuck it.
@@ -123,12 +123,12 @@ export function inFrontOfPortal(player: Player) {
     player.portalReflection.clone = new Clone(
       player.scene as MainScene,
       {
-        row: from.row * cellSize + cellSize / 2,
-        col: from.col * cellSize + cellSize / 2,
+        row: from.row * cellHeight + cellHeight / 2,
+        col: from.col * cellWidth + cellWidth / 2,
       },
       {
-        row: to.row * cellSize + cellSize / 2,
-        col: to.col * cellSize + cellSize / 2,
+        row: to.row * cellHeight + cellHeight / 2,
+        col: to.col * cellWidth + cellWidth / 2,
       }
     );
   }
@@ -159,8 +159,8 @@ export function inFrontOfPortal(player: Player) {
   } else {
     player.scene.tweens.add({
       targets: clone,
-      x: to.col * cellSize + cellSize / 2,
-      y: to.row * cellSize + cellSize / 2,
+      x: to.col * cellWidth + cellWidth / 2,
+      y: to.row * cellHeight + cellHeight / 2,
       ease: player.ease,
       duration: player.moveDuration,
       onComplete: () => {

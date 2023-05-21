@@ -44,12 +44,12 @@ class Laser extends Phaser.GameObjects.Line {
   ) {
     super(
       scene as MainScene,
-      col * scene.cellSize,
-      row * scene.cellSize,
-      col * scene.cellSize,
-      row * scene.cellSize,
-      col * scene.cellSize,
-      row * scene.cellSize,
+      col * scene.cellWidth,
+      row * scene.cellHeight,
+      col * scene.cellWidth,
+      row * scene.cellHeight,
+      col * scene.cellWidth,
+      row * scene.cellHeight,
       0xff1522
     );
     this.scene = scene as MainScene;
@@ -57,8 +57,8 @@ class Laser extends Phaser.GameObjects.Line {
     this.row = row;
     this.col = col;
     this.origin = { row, col };
-    this.x = col * scene.cellSize + scene.cellSize / 2;
-    this.y = row * scene.cellSize + scene.cellSize / 2;
+    this.x = col * scene.cellWidth + scene.cellWidth / 2;
+    this.y = row * scene.cellHeight + scene.cellHeight / 2;
     this.startX = this.x;
     this.startY = this.y;
     this.endX = this.x;
@@ -120,22 +120,22 @@ class Laser extends Phaser.GameObjects.Line {
   setPos(row: number, col: number, newDirection: Direction) {
     this.row = row;
     this.col = col;
-    this.x = col * this.scene.cellSize + this.scene.cellSize / 2;
-    this.y = row * this.scene.cellSize + this.scene.cellSize / 2;
+    this.x = col * this.scene.cellWidth + this.scene.cellWidth / 2;
+    this.y = row * this.scene.cellHeight + this.scene.cellHeight / 2;
     this.direction = newDirection;
   }
 
   update() {
     if (!this.valid) return;
-    const { cellSize, editor, player } = this.scene;
+    const { cellWidth, cellHeight, editor, player } = this.scene;
 
     if (editor.enabled) {
       //Reset to original position
       this.oscilation?.restart();
       this.oscilation?.pause();
 
-      this.x = this.origin.col * cellSize + cellSize / 2;
-      this.y = this.origin.row * cellSize + cellSize / 2;
+      this.x = this.origin.col * cellWidth + cellWidth / 2;
+      this.y = this.origin.row * cellHeight + cellHeight / 2;
       this.row = this.origin.row;
       this.col = this.origin.col;
 

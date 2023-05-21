@@ -233,7 +233,8 @@ class Editor extends Phaser.GameObjects.Graphics {
   placeSelection(row: number, col: number, placeByClicking: boolean) {
     if (!this.enabled) return;
 
-    const { player, allLasers, allCrates, tilemap, cellSize } = this.scene;
+    const { player, allLasers, allCrates, tilemap, cellWidth, cellHeight } =
+      this.scene;
 
     const { walls, floor } = tilemap;
 
@@ -314,8 +315,8 @@ class Editor extends Phaser.GameObjects.Graphics {
         if (!placeByClicking) return;
         new Bubble(
           this.scene,
-          col * cellSize + cellSize / 2,
-          row * cellSize + cellSize / 2,
+          col * cellWidth + cellWidth / 2,
+          row * cellHeight + cellHeight / 2,
           row,
           col,
           "left"
@@ -353,8 +354,8 @@ class Editor extends Phaser.GameObjects.Graphics {
             8,
             row,
             col,
-            col * cellSize,
-            row * cellSize,
+            col * cellWidth,
+            row * cellHeight,
             this.buttons.shift //Hold CMD to connect blocks
           );
         }
@@ -372,11 +373,12 @@ class Editor extends Phaser.GameObjects.Graphics {
           new Crate(
             this.scene as MainScene,
             "Wood",
-            Math.floor(Math.random() * 6),
+            0,
+            // 0,
             row,
             col,
-            col * cellSize,
-            row * cellSize,
+            col * cellWidth,
+            row * cellHeight,
             this.buttons.shift //Hold CMD to connect blocks
           );
         }
@@ -394,11 +396,11 @@ class Editor extends Phaser.GameObjects.Graphics {
           new Crate(
             this.scene as MainScene,
             "Metal",
-            6,
+            1,
             row,
             col,
-            col * cellSize,
-            row * cellSize,
+            col * cellWidth,
+            row * cellHeight,
             this.buttons.shift //Hold CMD to connect blocks
           );
         }
@@ -419,8 +421,8 @@ class Editor extends Phaser.GameObjects.Graphics {
             7,
             row,
             col,
-            col * cellSize,
-            row * cellSize,
+            col * cellWidth,
+            row * cellHeight,
             this.buttons.shift //Hold CMD to connect blocks
           );
         }

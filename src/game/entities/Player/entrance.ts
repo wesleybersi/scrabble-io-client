@@ -8,25 +8,25 @@ export default class Entrance extends Phaser.GameObjects.Sprite {
   constructor(scene: MainScene, row: number, col: number) {
     super(
       scene as MainScene,
-      row * scene.cellSize + scene.cellSize / 2,
-      col * scene.cellSize + scene.cellSize / 2,
+      row * scene.cellHeight + scene.cellHeight / 2,
+      col * scene.cellWidth + scene.cellWidth / 2,
       "entrance"
     );
     this.scene = scene;
     this.row = row;
     this.col = col;
-    this.x = col * scene.cellSize + scene.cellSize / 2;
-    this.y = row * scene.cellSize + scene.cellSize / 2;
+    this.x = col * scene.cellWidth + scene.cellWidth / 2;
+    this.y = row * scene.cellHeight + scene.cellHeight / 2;
 
     this.setDepth(1);
-      this.alpha = 0;
+    this.alpha = 0;
     this.draw();
 
     scene.add.existing(this);
   }
   draw() {
-    const { cellSize } = this.scene;
-    this.x = this.col * cellSize + cellSize / 2;
-    this.y = this.row * cellSize + cellSize / 2;
+    const { cellHeight, cellWidth } = this.scene;
+    this.x = this.col * cellWidth + cellWidth / 2;
+    this.y = this.row * cellHeight + cellHeight / 2;
   }
 }

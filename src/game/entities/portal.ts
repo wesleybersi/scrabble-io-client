@@ -34,8 +34,8 @@ class Portal extends Phaser.GameObjects.Graphics {
     this.row = row;
     this.col = col;
     this.setTargetTile();
-    this.x = col * this.scene.cellSize;
-    this.y = row * this.scene.cellSize;
+    this.x = col * this.scene.cellWidth;
+    this.y = row * this.scene.cellHeight;
 
     this.graphic.alpha = 0.5;
 
@@ -62,7 +62,7 @@ class Portal extends Phaser.GameObjects.Graphics {
   }
 
   draw() {
-    const { cellSize } = this.scene;
+    const { cellWidth, cellHeight } = this.scene;
     const size = 3;
     if (this.surface === "Wall") {
       this.graphic.setDepth(100);
@@ -72,27 +72,27 @@ class Portal extends Phaser.GameObjects.Graphics {
       let height = 0;
       const radii = { tl: 0, tr: 0, bl: 0, br: 0 };
       if (this.placement === "bottom") {
-        portalY += cellSize;
-        width = cellSize;
+        portalY += cellHeight;
+        width = cellWidth;
         height = size;
         radii.bl = size;
         radii.br = size;
       } else if (this.placement === "top") {
         portalY -= size;
-        width = cellSize;
+        width = cellWidth;
         height = size;
         radii.tl = size;
         radii.tr = size;
       } else if (this.placement === "left") {
         portalX -= size;
         width = size;
-        height = cellSize;
+        height = cellHeight;
         radii.tl = size;
         radii.bl = size;
       } else if (this.placement === "right") {
-        portalX += cellSize;
+        portalX += cellWidth;
         width = size;
-        height = cellSize;
+        height = cellHeight;
         radii.tr = size;
         radii.br = size;
       }
@@ -105,8 +105,8 @@ class Portal extends Phaser.GameObjects.Graphics {
       this.graphic.fillRoundedRect(
         this.x - size / 2,
         this.y - size / 2,
-        cellSize + size,
-        cellSize + size,
+        cellWidth + size,
+        cellHeight + size,
         8
       );
     }

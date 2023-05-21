@@ -27,7 +27,7 @@ const Game = () => {
       },
       zoom: window.devicePixelRatio,
       parent: "phaser-game",
-      backgroundColor: "#1A1817",
+      backgroundColor: "#ffffff",
       scene: [Main, EditorPanel],
       pixelArt: true,
       render: {

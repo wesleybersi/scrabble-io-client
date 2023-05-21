@@ -1,26 +1,26 @@
 import Laser from "../laser";
 
 export default function oscilate(laser: Laser) {
-  const { cellSize } = laser.scene;
+  const { cellWidth, cellHeight } = laser.scene;
   const target: { x: number; y: number } = { x: laser.x, y: laser.y };
 
   if (laser.movement === "in") {
     target.x =
       laser.direction === "down" || laser.direction === "up"
-        ? laser.x + cellSize - cellSize * laser.expanse
+        ? laser.x + cellWidth - cellWidth * laser.expanse
         : laser.x;
     target.y =
       laser.direction === "left" || laser.direction === "right"
-        ? laser.y + cellSize - cellSize * laser.expanse
+        ? laser.y + cellHeight - cellHeight * laser.expanse
         : laser.y;
   } else if (laser.movement === "out") {
     target.x =
       laser.direction === "down" || laser.direction === "up"
-        ? laser.x - cellSize + cellSize * laser.expanse
+        ? laser.x - cellWidth + cellWidth * laser.expanse
         : laser.x;
     target.y =
       laser.direction === "left" || laser.direction === "right"
-        ? laser.y - cellSize + cellSize * laser.expanse
+        ? laser.y - cellHeight + cellHeight * laser.expanse
         : laser.y;
   }
 
@@ -33,8 +33,8 @@ export default function oscilate(laser: Laser) {
     repeat: -1,
     ease: "Sine.InOut",
     onUpdate: () => {
-      laser.row = Math.floor(laser.y / cellSize);
-      laser.col = Math.floor(laser.x / cellSize);
+      laser.row = Math.floor(laser.y / cellHeight);
+      laser.col = Math.floor(laser.x / cellWidth);
     },
   });
 }

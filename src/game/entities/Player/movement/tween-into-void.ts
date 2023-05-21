@@ -5,11 +5,11 @@ export default function tweenIntoVoid(
   col: number,
   row: number
 ) {
-  const { cellSize } = player.scene;
+  const { cellWidth, cellHeight } = player.scene;
 
   const target = {
-    x: Math.floor(col * cellSize) + cellSize / 2,
-    y: Math.floor(row * cellSize) + cellSize / 2,
+    x: Math.floor(col * cellWidth) + cellWidth / 2,
+    y: Math.floor(row * cellHeight) + cellHeight / 2,
   };
 
   player.scene.tweens.add({

@@ -84,11 +84,11 @@ class Crate extends Phaser.GameObjects.Sprite {
     this.origin = {
       row,
       col,
-      x: x + scene.cellSize / 2,
-      y: y + scene.cellSize / 2,
+      x: x + scene.cellWidth / 2,
+      y: y + 4,
     };
-    this.y = y + scene.cellSize / 2;
-    this.x = x + scene.cellSize / 2;
+    this.y = y + 4;
+    this.x = x + scene.cellWidth / 2;
     this.setHP();
     this.connectedTo = Object.assign({}, allCardinalsUndefined);
     this.adjacentCrates = Object.assign({}, allCardinalsUndefined);
@@ -127,6 +127,7 @@ class Crate extends Phaser.GameObjects.Sprite {
     );
   }
   setSpikes() {
+    return;
     const spikes = {
       top: Math.floor(Math.random() * 50) === 1,
       bottom: Math.floor(Math.random() * 50) === 1,
@@ -263,6 +264,7 @@ class Crate extends Phaser.GameObjects.Sprite {
         }
       }
     }
+    this.setDepth(this.row);
 
     if (this.isMoving) return;
 
@@ -306,7 +308,7 @@ class Crate extends Phaser.GameObjects.Sprite {
     makeMove(this, direction, allIncluded, duration, completed);
   }
   explode(explodingTiles: Set<string> = new Set()) {
-    const { cellSize } = this.scene;
+    const { cellWidth, cellHeight } = this.scene;
 
     explodingTiles.add(`${this.row},${this.col}`);
     for (const [pos, tile] of Object.entries(this.adjacent)) {
@@ -316,8 +318,8 @@ class Crate extends Phaser.GameObjects.Sprite {
       if (crate && crate.active && crate.crateType === "Explosive") continue;
       new Explosion(
         this.scene,
-        tile.col * cellSize + cellSize / 2,
-        tile.row * cellSize + cellSize / 2,
+        tile.col * cellWidth + cellWidth / 2,
+        tile.row * cellHeight + cellHeight / 2,
         tile.row,
         tile.col
       );

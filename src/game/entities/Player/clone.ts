@@ -11,8 +11,8 @@ export class Clone extends Phaser.GameObjects.Sprite {
   ) {
     super(
       scene as MainScene,
-      from.col * scene.cellSize + scene.cellSize / 2,
-      from.row * scene.cellSize + scene.cellSize / 2,
+      from.col * scene.cellWidth + scene.cellWidth / 2,
+      from.row * scene.cellHeight + scene.cellHeight / 2,
       "player",
       "0"
     );

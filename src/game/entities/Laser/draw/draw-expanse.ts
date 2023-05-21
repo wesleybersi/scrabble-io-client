@@ -1,7 +1,7 @@
 import Laser from "../laser";
 
 export default function drawExpanse(laser: Laser) {
-  const { cellSize } = laser.scene;
+  const { cellHeight, cellWidth } = laser.scene;
   const { direction, expanse, origin } = laser;
 
   laser.editorExpanseTiles.clear();
@@ -10,28 +10,28 @@ export default function drawExpanse(laser: Laser) {
     if (direction === "up" || direction === "down")
       laser.editorExpanseTiles.fillRect(
         laser.movement === "in"
-          ? origin.col * cellSize + cellSize - expanse * cellSize
-          : origin.col * cellSize,
-        origin.row * cellSize,
-        expanse * cellSize,
-        cellSize
+          ? origin.col * cellWidth + cellWidth - expanse * cellWidth
+          : origin.col * cellWidth,
+        origin.row * cellHeight,
+        expanse * cellWidth,
+        cellHeight
       );
     else if (direction === "left" || direction === "right") {
       laser.editorExpanseTiles.fillRect(
-        origin.col * cellSize,
+        origin.col * cellWidth,
         laser.movement === "in"
-          ? origin.row * cellSize + cellSize - expanse * cellSize
-          : origin.row * cellSize,
-        cellSize,
-        expanse * cellSize
+          ? origin.row * cellHeight + cellHeight - expanse * cellHeight
+          : origin.row * cellHeight,
+        cellWidth,
+        expanse * cellHeight
       );
     }
   } else {
     laser.editorExpanseTiles.fillRect(
-      laser.col * cellSize,
-      laser.row * cellSize,
-      cellSize,
-      cellSize
+      laser.col * cellWidth,
+      laser.row * cellHeight,
+      cellWidth,
+      cellHeight
     );
   }
 }

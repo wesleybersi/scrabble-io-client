@@ -42,12 +42,12 @@ export default class Explosion extends Phaser.GameObjects.Sprite {
     this.destruct();
   }
   destruct() {
-    const { cellSize, player, allCrates, tilemap } = this.scene;
+    const { cellWidth, cellHeight, player, allCrates, tilemap } = this.scene;
     const { walls, floor } = tilemap;
 
     if (
-      isWithinGrace(player.x, this.x, cellSize) &&
-      isWithinGrace(player.y, this.y, cellSize)
+      isWithinGrace(player.x, this.x, cellWidth) &&
+      isWithinGrace(player.y, this.y, cellHeight)
     ) {
       player.state = "Dead";
     }

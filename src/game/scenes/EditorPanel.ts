@@ -197,38 +197,39 @@ class EditorPanel extends Phaser.Scene {
 
     this.input.keyboard?.on("keydown", (event: KeyboardEvent) => {
       const player = main.player;
+      const { cellWidth, cellHeight } = main;
       switch (event.key) {
         case "w":
         case "ArrowUp":
-          player.place(player.x, (player.y -= main.cellSize));
+          player.place(player.x, (player.y -= cellHeight));
           player.origin = {
-            row: Math.floor(player.y / main.cellSize),
-            col: Math.floor(player.x / main.cellSize),
+            row: Math.floor(player.y / cellHeight),
+            col: Math.floor(player.x / cellWidth),
           };
           break;
 
         case "s":
         case "ArrowDown":
-          player.place(player.x, (player.y += main.cellSize));
+          player.place(player.x, (player.y += cellHeight));
           player.origin = {
-            row: Math.floor(player.y / main.cellSize),
-            col: Math.floor(player.x / main.cellSize),
+            row: Math.floor(player.y / cellHeight),
+            col: Math.floor(player.x / cellWidth),
           };
           break;
         case "a":
         case "ArrowLeft":
-          player.place((player.x -= main.cellSize), player.y);
+          player.place((player.x -= cellWidth), player.y);
           player.origin = {
-            row: Math.floor(player.y / main.cellSize),
-            col: Math.floor(player.x / main.cellSize),
+            row: Math.floor(player.y / cellHeight),
+            col: Math.floor(player.x / cellWidth),
           };
           break;
         case "d":
         case "ArrowRight":
-          player.place((player.x += main.cellSize), player.y);
+          player.place((player.x += cellWidth), player.y);
           player.origin = {
-            row: Math.floor(player.y / main.cellSize),
-            col: Math.floor(player.x / main.cellSize),
+            row: Math.floor(player.y / cellHeight),
+            col: Math.floor(player.x / cellWidth),
           };
           break;
       }

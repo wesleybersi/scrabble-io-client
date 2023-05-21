@@ -6,7 +6,7 @@ import tweenIntoVoid from "./tween-into-void";
 
 export default function tweenToTile(player: Player, col: number, row: number) {
   if (player.state === "Dead") return;
-  const { cellSize, buttons } = player.scene;
+  const { cellWidth, cellHeight, buttons } = player.scene;
   if (player.portalClone) {
     exitPortal(player);
   }
@@ -15,8 +15,8 @@ export default function tweenToTile(player: Player, col: number, row: number) {
   }
 
   const target = {
-    x: Math.floor(col * cellSize) + cellSize / 2,
-    y: Math.floor(row * cellSize) + cellSize / 2,
+    x: Math.floor(col * cellWidth) + cellWidth / 2,
+    y: Math.floor(row * cellHeight),
   };
 
   const tween = player.scene.tweens.add({
@@ -49,16 +49,16 @@ export default function tweenToTile(player: Player, col: number, row: number) {
       if (player.state === "Dead") return;
 
       if (player.portalClone) {
-        player.x = player.portalClone.to.col * cellSize + cellSize / 2;
-        player.y = player.portalClone.to.row * cellSize + cellSize / 2;
+        player.x = player.portalClone.to.col * cellWidth + cellWidth / 2;
+        player.y = player.portalClone.to.row * cellHeight;
         player.portalClone.destroy();
         player.portalClone = null;
       } else {
         player.x = target.x;
         player.y = target.y;
       }
-      player.row = Math.floor(player.y - cellSize / 2) / cellSize;
-      player.col = Math.floor(player.x - cellSize / 2) / cellSize;
+      player.row = Math.floor(player.y) / cellHeight;
+      player.col = Math.floor(player.x - cellWidth / 2) / cellWidth;
 
       if (
         player.state === "Pulling" ||

@@ -9,8 +9,12 @@ import Editor from "../entities/editor";
 import tilesetFloor from "../assets/images/tilesets/floor.png";
 import tilesetWalls from "../assets/images/tilesets/walls.png";
 
-import spritesheetPlayer from "../assets/images/spritesheets/player.png";
-import spritesheetCrates from "../assets/images/spritesheets/crates.png";
+import spritesheetPlayer from "../assets/images/spritesheets/player-base.png";
+// import spritesheetCrates from "../assets/images/spritesheets/crates.png";
+
+// import spritesheetCrates from "../assets/images/spritesheets/crates-depth.png";
+import spritesheetCrates from "../assets/images/spritesheets/crates-40.png";
+
 import spritesheetExplosion from "../assets/images/spritesheets/explosion.png";
 import spritesheetCracks from "../assets/images/spritesheets/wallcrack.png";
 import spritesheetOil from "../assets/images/spritesheets/oil.png";
@@ -41,7 +45,8 @@ export default class MainScene extends Phaser.Scene {
   cursor!: Cursor;
   rowCount = 200;
   colCount = 200;
-  cellSize = 32;
+  cellWidth = 32;
+  cellHeight = 24;
   player!: Player;
   pirates = [];
   gameState: { crates: string } = { crates: "" };
@@ -75,6 +80,8 @@ export default class MainScene extends Phaser.Scene {
   }
 
   preload() {
+    const { cellWidth, cellHeight } = this;
+
     this.load.audio("portal-a", sfxFireBlue);
     this.load.audio("portal-b", sfxFireOrange);
     this.load.audio("remover", sfxRemover);
@@ -87,42 +94,42 @@ export default class MainScene extends Phaser.Scene {
     this.load.image("bubble", imageBubble);
 
     this.load.spritesheet("cursor", cursor, {
-      frameWidth: 38,
-      frameHeight: 38,
+      frameWidth: cellWidth,
+      frameHeight: cellHeight,
     });
 
     //Tilesets
     this.load.spritesheet("floor-tileset", tilesetFloor, {
-      frameWidth: 32,
-      frameHeight: 32,
+      frameWidth: cellWidth,
+      frameHeight: cellWidth,
     });
     this.load.spritesheet("wall-tileset", tilesetWalls, {
-      frameWidth: 32,
-      frameHeight: 32,
+      frameWidth: cellWidth,
+      frameHeight: cellHeight,
     });
 
     //Spritsheets
     this.load.spritesheet("crates", spritesheetCrates, {
       frameWidth: 32,
-      frameHeight: 32,
+      frameHeight: 40,
     });
 
     this.load.spritesheet("player", spritesheetPlayer, {
       frameWidth: 32,
-      frameHeight: 32,
+      frameHeight: 48,
     });
 
     this.load.spritesheet("explosion", spritesheetExplosion, {
-      frameWidth: 32,
-      frameHeight: 32,
+      frameWidth: cellWidth,
+      frameHeight: cellHeight,
     });
     this.load.spritesheet("cracks", spritesheetCracks, {
-      frameWidth: 32,
-      frameHeight: 32,
+      frameWidth: cellWidth,
+      frameHeight: cellHeight,
     });
     this.load.spritesheet("oil", spritesheetOil, {
-      frameWidth: 32,
-      frameHeight: 32,
+      frameWidth: cellHeight,
+      frameHeight: cellHeight,
     });
   }
 
@@ -149,13 +156,13 @@ export default class MainScene extends Phaser.Scene {
       }
     }
 
-    const worldWidth = this.colCount * this.cellSize;
-    const worldHeight = this.rowCount * this.cellSize;
+    const worldWidth = this.colCount * this.cellWidth;
+    const worldHeight = this.rowCount * this.cellHeight;
 
     this.cursor = new Cursor(
       this,
-      this.hover.col * this.cellSize + this.cellSize / 2,
-      this.hover.row * this.cellSize + this.cellSize / 2,
+      this.hover.col * this.cellWidth + this.cellWidth / 2,
+      this.hover.row * this.cellHeight + this.cellHeight / 2,
       this.hover.row,
       this.hover.col
     );
@@ -170,8 +177,8 @@ export default class MainScene extends Phaser.Scene {
 
     this.portals = { a: null, b: null };
 
-    const playerX = (this.colCount / 2) * this.cellSize + this.cellSize / 2;
-    const playerY = (this.rowCount / 2) * this.cellSize + this.cellSize / 2;
+    const playerX = (this.colCount / 2) * this.cellWidth + this.cellWidth / 2;
+    const playerY = (this.rowCount / 2) * this.cellHeight + this.cellHeight / 2;
     this.player = new Player(this, playerX, playerY);
     const camera = this.cameras.main;
 
@@ -201,8 +208,8 @@ export default class MainScene extends Phaser.Scene {
     //ANCHOR Mouse events
     this.input.mouse?.disableContextMenu();
     this.input.on("pointermove", (pointer: Phaser.Input.Pointer) => {
-      const row = Math.floor(pointer.worldY / this.cellSize);
-      const col = Math.floor(pointer.worldX / this.cellSize);
+      const row = Math.floor(pointer.worldY / this.cellHeight);
+      const col = Math.floor(pointer.worldX / this.cellWidth);
 
       this.hover.row = row;
       this.hover.col = col;
