@@ -5,7 +5,8 @@ import exitPortal from "../portals/exitPortal";
 import tweenIntoVoid from "./tween-into-void";
 
 export default function tweenToTile(player: Player, col: number, row: number) {
-  const { portals, cellSize, buttons } = player.scene;
+  if (player.state === "Dead") return;
+  const { cellSize, buttons } = player.scene;
   if (player.portalClone) {
     exitPortal(player);
   }
@@ -24,25 +25,21 @@ export default function tweenToTile(player: Player, col: number, row: number) {
     y: target.y,
     ease: player.ease,
     duration: player.moveDuration,
-    onStart: () => {
-      setTimeout(() => {
-        if (player.removePortals) {
-          if (portals.a || portals.b) {
-            portals.a?.remove();
-            portals.b?.remove();
-            portals.a = null;
-            portals.b = null;
-            player.portalReflection?.clone?.destroy();
-            player.portalReflection = null;
-            player.removePortals = false;
-            player.scene.sound.play("remover");
-          } else {
-            player.removePortals = false;
-          }
+    onUpdate: () => {
+      if (player.state === "Dead") {
+        tween.remove();
+        return;
+      }
+      if (player.spiked) {
+        if (tween.progress > 0.25) {
+          player.setDepth(0);
+          player.scene.sound.play("splat");
+          player.state = "Dead";
+          player.spiked = false;
+          return;
         }
-      }, player.moveDuration / 2);
+      }
     },
-
     onComplete: () => {
       if (player.state === "Falling") {
         tweenIntoVoid(player, col, row);
@@ -78,6 +75,15 @@ export default function tweenToTile(player: Player, col: number, row: number) {
         if (!stillHolding) player.state = "Idle";
       } else {
         player.state = "Idle";
+      }
+
+      const { floor } = player.scene.tilemap;
+      const floorTile = floor.getTileAt(player.col, player.row);
+
+      switch (floorTile.properties.name) {
+        case "Lava":
+          player.state = "Dead";
+          break;
       }
 
       for (const [direction, playerInput] of Object.entries(player.moving)) {

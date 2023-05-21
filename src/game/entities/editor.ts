@@ -5,6 +5,7 @@ import { Player } from "./Player/player";
 import MainScene from "../scenes/MainScene";
 import Laser from "./Laser/laser";
 import Crate from "./Crate/crate";
+import Bubble from "./bubble";
 import { getAdjacentTiles } from "../utils/opposite";
 
 class Editor extends Phaser.GameObjects.Graphics {
@@ -21,17 +22,21 @@ class Editor extends Phaser.GameObjects.Graphics {
   selected:
     | "None"
     | "Void"
+    | "Oil"
     | "Wall"
     | "Crate"
     | "Metal Crate"
-    | "TNT"
+    | "Explosive"
+    | "Nuke"
     | "Pipe"
     | "Remover"
     | "Portal"
     | "Ice"
     | "Cornerpiece"
+    | "Bubble"
     | "Water"
     | "Laser"
+    | "Lava"
     | "Propulsion" = "Wall";
   placement!: Cardinal;
   camera!: Phaser.Cameras.Scene2D.Camera;
@@ -71,6 +76,12 @@ class Editor extends Phaser.GameObjects.Graphics {
         case "1":
           this.selected = "Wall";
           break;
+        case "2":
+          this.selected = "Nuke";
+          break;
+        case "3":
+          this.selected = "Oil";
+          break;
         case "4":
           this.selected = "Crate";
           break;
@@ -78,16 +89,19 @@ class Editor extends Phaser.GameObjects.Graphics {
           this.selected = "Metal Crate";
           break;
         case "6":
-          this.selected = "TNT";
+          this.selected = "Explosive";
           break;
         case "7":
           this.selected = "Ice";
           break;
         case "8":
-          this.selected = "Water";
+          this.selected = "Bubble";
           break;
         case "9":
           this.selected = "Laser";
+          break;
+        case "-":
+          this.selected = "Lava";
           break;
         case "r":
           this.selected = "None";
@@ -290,6 +304,23 @@ class Editor extends Phaser.GameObjects.Graphics {
       case "Void":
         tilemap.placeVoid(col, row);
         break;
+      case "Oil":
+        tilemap.addOil(col, row);
+        break;
+      case "Lava":
+        tilemap.placeLavaTile(col, row);
+        break;
+      case "Bubble":
+        if (!placeByClicking) return;
+        new Bubble(
+          this.scene,
+          col * cellSize + cellSize / 2,
+          row * cellSize + cellSize / 2,
+          row,
+          col,
+          "left"
+        );
+        break;
       case "Wall":
         if (wall) {
           if (!placeByClicking) return;
@@ -305,6 +336,28 @@ class Editor extends Phaser.GameObjects.Graphics {
           tilemap.placeWall(col, row);
         }
 
+        break;
+      case "Nuke":
+        if (wall) return;
+        if (crate && crate instanceof Crate) {
+          if (this.buttons.shift) {
+            crate.connectShape();
+            return;
+          }
+        }
+        if (!crate) {
+          if (player.row === row && player.col === col) return;
+          new Crate(
+            this.scene as MainScene,
+            "Nuke",
+            8,
+            row,
+            col,
+            col * cellSize,
+            row * cellSize,
+            this.buttons.shift //Hold CMD to connect blocks
+          );
+        }
         break;
       case "Crate":
         if (wall) return;
@@ -350,7 +403,7 @@ class Editor extends Phaser.GameObjects.Graphics {
           );
         }
         break;
-      case "TNT":
+      case "Explosive":
         if (wall) return;
         if (crate && crate instanceof Crate) {
           if (this.buttons.shift && crate.crateType === "Metal") {
@@ -362,7 +415,7 @@ class Editor extends Phaser.GameObjects.Graphics {
           if (player.row === row && player.col === col) return;
           new Crate(
             this.scene as MainScene,
-            "TNT",
+            "Explosive",
             7,
             row,
             col,
@@ -398,29 +451,29 @@ class Editor extends Phaser.GameObjects.Graphics {
     }
   }
   setScreenBorder() {
-    if (this.enabled) {
-      this.screenBorder.clear();
-      this.screenBorder.setActive(true);
-      this.screenBorder.setVisible(true);
-      this.screenBorder.setDepth(1000);
-      const size = 8;
-      if (this.buttons.meta) {
-        this.screenBorder.lineStyle(size, 0xff0000);
-      } else if (this.buttons.fill) {
-        this.screenBorder.lineStyle(size, 0x0000ff);
-      } else {
-        this.screenBorder.lineStyle(size, 0xffdd55);
-      }
-      this.screenBorder.strokeRect(
-        this.camera.worldView.left,
-        this.camera.worldView.top,
-        this.camera.worldView.width,
-        this.camera.worldView.height
-      );
-    } else {
-      this.screenBorder.setActive(false);
-      this.screenBorder.setVisible(false);
-    }
+    // if (this.enabled) {
+    //   this.screenBorder.clear();
+    //   this.screenBorder.setActive(true);
+    //   this.screenBorder.setVisible(true);
+    //   this.screenBorder.setDepth(1000);
+    //   const size = 8;
+    //   if (this.buttons.meta) {
+    //     this.screenBorder.lineStyle(size, 0xff0000);
+    //   } else if (this.buttons.fill) {
+    //     this.screenBorder.lineStyle(size, 0x0000ff);
+    //   } else {
+    //     this.screenBorder.lineStyle(size, 0xffdd55);
+    //   }
+    //   this.screenBorder.strokeRect(
+    //     this.camera.worldView.left,
+    //     this.camera.worldView.top,
+    //     this.camera.worldView.width,
+    //     this.camera.worldView.height
+    //   );
+    // } else {
+    //   this.screenBorder.setActive(false);
+    //   this.screenBorder.setVisible(false);
+    // }
   }
   enable() {
     console.log("Editor mode: enabled");
@@ -440,19 +493,22 @@ class Editor extends Phaser.GameObjects.Graphics {
     type: "Clear" | "Ice" | "Wall",
     area: Set<string> = new Set()
   ): Set<string> {
-    const { tilemap, allCrates, player } = this.scene;
+    const { tilemap, allCrates, player, rowCount, colCount } = this.scene;
     const { walls, floor } = tilemap;
+
+    if (row >= rowCount || col >= colCount || row <= 0 || col <= 0) return area;
 
     const adjacent = getAdjacentTiles(row, col);
     if (initial) {
       area.add(`${row},${col}`);
-      if (!allCrates.has(`${row},${col}`)) {
-        if (type === "Clear") tilemap.placeEmptyFloorTile(col, row);
-        else if (type === "Ice") {
-          if (floor.getTileAt(col, row)?.properties.name === "Empty") {
-            tilemap.placeIceTile(col, row);
-          }
-        } else if (type === "Wall") {
+
+      if (type === "Clear") tilemap.placeEmptyFloorTile(col, row);
+      else if (type === "Ice") {
+        if (floor.getTileAt(col, row)?.properties.name === "Empty") {
+          tilemap.placeIceTile(col, row);
+        }
+      } else if (type === "Wall") {
+        if (!allCrates.has(`${row},${col}`)) {
           if (player.row !== row || player.col !== col) {
             tilemap.placeWall(col, row);
           }
@@ -461,21 +517,29 @@ class Editor extends Phaser.GameObjects.Graphics {
     }
 
     for (const [side, tile] of Object.entries(adjacent)) {
+      if (
+        tile.row >= rowCount ||
+        tile.col >= colCount ||
+        tile.row <= 0 ||
+        tile.col <= 0
+      )
+        return area;
       const wall = walls.getTileAt(tile.col, tile.row);
-      if (wall) continue;
+      if (type === "Clear" && !wall) continue;
+      if (type !== "Clear" && wall) continue;
       const pos = `${tile.row},${tile.col}`;
       if (!area.has(pos)) {
         area.add(`${tile.row},${tile.col}`);
 
-        if (!allCrates.has(pos)) {
-          if (type === "Clear") tilemap.placeEmptyFloorTile(tile.col, tile.row);
-          else if (type === "Ice") {
-            if (
-              floor.getTileAt(tile.col, tile.row)?.properties.name === "Empty"
-            ) {
-              tilemap.placeIceTile(tile.col, tile.row);
-            }
-          } else if (type === "Wall") {
+        if (type === "Clear") tilemap.placeEmptyFloorTile(tile.col, tile.row);
+        else if (type === "Ice") {
+          if (
+            floor.getTileAt(tile.col, tile.row)?.properties.name === "Empty"
+          ) {
+            tilemap.placeIceTile(tile.col, tile.row);
+          }
+        } else if (type === "Wall") {
+          if (!allCrates.has(pos)) {
             if (player.row !== tile.row || player.col !== tile.col) {
               tilemap.placeWall(tile.col, tile.row);
             }

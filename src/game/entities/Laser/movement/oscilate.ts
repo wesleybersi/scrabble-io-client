@@ -28,7 +28,7 @@ export default function oscilate(laser: Laser) {
     targets: [laser],
     x: target.x,
     y: target.y,
-    duration: laser.expanse * 750,
+    duration: laser.expanse * 1000,
     yoyo: true,
     repeat: -1,
     ease: "Sine.InOut",

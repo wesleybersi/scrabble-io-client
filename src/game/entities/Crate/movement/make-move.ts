@@ -11,7 +11,7 @@ export default function makeMove(
   crate.isMoving = true;
   crate.direction = direction;
 
-  const { portals, allCrates, cellSize } = crate.scene;
+  const { portals, allCrates, cellSize, resetAll } = crate.scene;
   crate.target = { row: crate.row, col: crate.col, x: crate.x, y: crate.y };
 
   if (direction === "up") {
@@ -37,6 +37,7 @@ export default function makeMove(
     y: crate.target.y,
     ease: "Linear",
     duration: duration,
+
     onComplete: () => {
       //   if (crate.portalTrigger) {
       //     const { to, connectedTo, exiting, entering } = crate.portalTrigger;
@@ -88,7 +89,7 @@ export default function makeMove(
 }
 
 export function moveComplete(crate: Crate) {
-  const { cellSize, allCrates } = crate.scene;
+  const { allCrates } = crate.scene;
   const { floor } = crate.scene.tilemap;
 
   if (crate.target) {
@@ -105,24 +106,87 @@ export function moveComplete(crate: Crate) {
 
   const tile = floor.getTileAt(crate.col, crate.row);
   if (tile) {
-    if (tile.properties.name === "Void") {
-      allCrates.delete(`${crate.row},${crate.col}`);
-      crate.setDepth(0);
-      const tween = crate.scene.tweens.add({
-        targets: [crate],
-        scale: 0,
-        duration: 1500,
-        ease: "Quad.Out",
-        onUpdate: () => {
-          if (tween.progress > 0.5) {
-            crate.setDepth(0);
+    switch (tile.properties.name) {
+      case "Void":
+        {
+          allCrates.delete(`${crate.row},${crate.col}`);
+          crate.setDepth(0);
+          crate.isFalling = true;
+          const tween = crate.scene.tweens.add({
+            targets: [crate],
+            scale: 0,
+            duration: 1500,
+            ease: "Quad.Out",
+            onUpdate: () => {
+              if (tween.progress > 0.5) {
+                crate.setDepth(0);
+              }
+            },
+            onComplete: () => {
+              crate.setActive(false);
+              crate.update();
+              crate.scale = 1;
+              crate.isFalling = false;
+              return;
+            },
+          });
+        }
+        break;
+      case "Ice":
+        {
+          //TODO multiple crates are preparing movement. Some overlapping. Creaing wonky results
+          const { player } = crate.scene;
+          const { allIncluded, abort } = crate.prepareMovement(crate.direction);
+
+          console.log(allIncluded);
+          if (crate.crateType === "Wood") console.count("Ice");
+          if (abort) return;
+
+          let weightMultiplier = 1;
+          for (const c of allIncluded) {
+            if (c.weight > weightMultiplier) weightMultiplier = c.weight;
           }
-        },
-        onComplete: () => {
-          crate.remove();
-          return;
-        },
-      });
+
+          const completedTweens = new Set<Crate>();
+          const duration = Math.max(
+            ((Math.sqrt(allIncluded.size) * player.initialMoveDuration) / 1.5) *
+              0.5,
+            player.initialMoveDuration / 1.5
+          );
+          for (const includedCrate of allIncluded) {
+            includedCrate.makeMove(
+              crate.direction,
+              allIncluded,
+              duration * weightMultiplier,
+              completedTweens
+            );
+          }
+        }
+        break;
+      case "Lava":
+        if (crate.crateType === "Explosive") {
+          crate.explode();
+        } else if (crate.crateType === "Wood") {
+          allCrates.delete(`${crate.row},${crate.col}`);
+          crate.setDepth(0);
+          crate.isFalling = true;
+          const tween = crate.scene.tweens.add({
+            targets: [crate],
+            scale: 0,
+            alpha: 0,
+            duration: 6000,
+            ease: "Quad",
+            onUpdate: () => {
+              if (tween.progress > 0.1) {
+                crate.setActive(false);
+                crate.update();
+                crate.scale = 1;
+                crate.isFalling = false;
+              }
+            },
+          });
+        }
+        break;
     }
   }
 }

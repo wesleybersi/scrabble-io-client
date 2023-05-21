@@ -55,7 +55,7 @@ export default class Explosion extends Phaser.GameObjects.Sprite {
     const pos = `${this.row},${this.col}`;
     const crate = allCrates.get(pos);
     // if (crate && crate.hp < Infinity) crate.remove();
-    if (crate && crate.hp < Infinity) crate.setActive(false);
+    if (crate && crate.active && crate.hp < Infinity) crate.setActive(false);
 
     const wall = walls.getTileAt(this.col, this.row);
 
@@ -68,6 +68,8 @@ export default class Explosion extends Phaser.GameObjects.Sprite {
         //Remember destruction and recreate on editor
       } else {
         this.destroy();
+
+        //If editor, place wall with cracks at
         return;
       }
     }

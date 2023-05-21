@@ -11,6 +11,8 @@ export default function handleMovement(player: Player) {
   if (player.state !== "Idle" && player.state !== "Holding") {
     return;
   }
+const {events} = player.scene;
+
   player.portalClone = null;
   player.moveDuration = player.initialMoveDuration;
   player.ease = "Linear";
@@ -25,12 +27,12 @@ export default function handleMovement(player: Player) {
           player.col
         );
         //ANCHOR Move valid
-
         if (
           player.state !== "Pushing" &&
           player.state !== "Pulling" &&
           player.state !== "Falling" &&
-          player.state !== "Sliding"
+          player.state !== "Sliding" &&
+          player.state !== "Dead"
         ) {
           player.state = "Moving";
         }
@@ -42,7 +44,7 @@ export default function handleMovement(player: Player) {
         player.forceMovement = Object.assign({}, allDirectionsFalse);
         player.moving = Object.assign({}, allDirectionsFalse);
         player.portalClone = null;
-        player.state = "Idle";
+        if (player.state !== "Dead") player.state = "Idle";
         return;
       }
     };

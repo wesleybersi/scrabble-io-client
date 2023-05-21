@@ -33,6 +33,7 @@ export function isObstructed(player: Player, direction: Direction) {
   let targetFloor = floor.getTileAt(targetCol, targetRow);
   let targetWall = walls.getTileAt(targetCol, targetRow);
   let targetCrate = allCrates.get(`${targetRow},${targetCol}`);
+  if (targetCrate && !targetCrate.active) targetCrate = undefined;
 
   //If portals are active, new target?
   if (portals.a && portals.b) {
@@ -49,11 +50,16 @@ export function isObstructed(player: Player, direction: Direction) {
       targetFloor = tilemap.floor.getTileAt(newTarget.col, newTarget.row);
       targetWall = tilemap.walls.getTileAt(newTarget.col, newTarget.row);
       targetCrate = allCrates.get(`${newTarget.row},${newTarget.col}`);
+      if (targetCrate && !targetCrate.active) targetCrate = undefined;
     }
   }
 
-  if (targetCrate) {
-    console.log(targetCrate);
+  const currentFloor = tilemap.floor.getTileAt(player.col, player.row);
+  if (currentFloor) {
+    if (currentFloor.properties.oil) {
+      player.moveDuration = player.initialMoveDuration * 3;
+      // player.ease = "Quad.In";
+    }
   }
 
   //Now we know which targets to work with.
@@ -87,48 +93,54 @@ export function isObstructed(player: Player, direction: Direction) {
 
         const cornerPiece = targetFloor.properties.cornerPiece;
 
-        if (!cornerPiece) {
-          player.forceMovement[direction] = true;
-        } else if (cornerPiece) {
-          if (cornerPiece.direction === "TopLeft") {
-            if (direction === "up") {
-              player.forceMovement.right = true;
-            } else if (direction === "left") {
-              player.forceMovement.down = true;
-            } else {
-              player.forceMovement[direction] = true;
-            }
-          } else if (cornerPiece.direction === "TopRight") {
-            if (direction === "up") {
-              player.forceMovement.left = true;
-            } else if (direction === "right") {
-              player.forceMovement.down = true;
-            } else {
-              player.forceMovement[direction] = true;
-            }
-          } else if (cornerPiece.direction === "BottomLeft") {
-            if (direction === "down") {
-              player.forceMovement.right = true;
-            } else if (direction === "left") {
-              player.forceMovement.up = true;
-            } else {
-              player.forceMovement[direction] = true;
-            }
-          } else if (cornerPiece.direction === "BottomRight") {
-            if (direction === "down") {
-              player.forceMovement.left = true;
-            } else if (direction === "right") {
-              player.forceMovement.up = true;
-            } else {
-              player.forceMovement[direction] = true;
+        if (!targetCrate) {
+          if (!cornerPiece) {
+            player.forceMovement[direction] = true;
+          } else if (cornerPiece) {
+            if (cornerPiece.direction === "TopLeft") {
+              if (direction === "up") {
+                player.forceMovement.right = true;
+              } else if (direction === "left") {
+                player.forceMovement.down = true;
+              } else {
+                player.forceMovement[direction] = true;
+              }
+            } else if (cornerPiece.direction === "TopRight") {
+              if (direction === "up") {
+                player.forceMovement.left = true;
+              } else if (direction === "right") {
+                player.forceMovement.down = true;
+              } else {
+                player.forceMovement[direction] = true;
+              }
+            } else if (cornerPiece.direction === "BottomLeft") {
+              if (direction === "down") {
+                player.forceMovement.right = true;
+              } else if (direction === "left") {
+                player.forceMovement.up = true;
+              } else {
+                player.forceMovement[direction] = true;
+              }
+            } else if (cornerPiece.direction === "BottomRight") {
+              if (direction === "down") {
+                player.forceMovement.left = true;
+              } else if (direction === "right") {
+                player.forceMovement.up = true;
+              } else {
+                player.forceMovement[direction] = true;
+              }
             }
           }
-        }
 
-        player.state = "Sliding";
-        // player.moveDuration = 35;
-        // return false;
+          player.state = "Sliding";
+          player.moveDuration = Math.floor(player.initialMoveDuration / 1.5);
+          // return false;
+        }
       }
+    }
+    if (targetFloor.properties.oil) {
+      player.moveDuration = player.initialMoveDuration * 3;
+      // player.ease = "Quad.Out";
     }
   }
 
@@ -136,6 +148,7 @@ export function isObstructed(player: Player, direction: Direction) {
   let heldCrate: Crate | undefined = undefined;
   if (player.state === "Holding") {
     for (const [side, crate] of Object.entries(player.holding)) {
+      if (crate && !crate.active) continue;
       if (crate) {
         if (
           direction !== cardinalToDirection(side as Cardinal) &&
@@ -175,6 +188,19 @@ export function isObstructed(player: Player, direction: Direction) {
       usePullDirection ? pullDirection : direction
     );
 
+    for (const [side, spikes] of Object.entries(targetCrate.extension)) {
+      if (player.state !== "Holding") {
+        if (
+          spikes &&
+          getOppositeDirection(cardinalToDirection(side as Cardinal)) ===
+            direction
+        ) {
+          player.spiked = true;
+          return false;
+        }
+      }
+    }
+
     if (abort) {
       console.log("Aborted");
       return true;
@@ -209,10 +235,12 @@ export function isObstructed(player: Player, direction: Direction) {
     }
 
     const completedTweens = new Set<Crate>();
+
     const duration = Math.max(
-      Math.sqrt(allIncluded.size + portalSet.size) * player.moveDuration * 1.1,
-      player.moveDuration * 1.25
+      Math.sqrt(allIncluded.size + portalSet.size) * player.moveDuration * 0.5,
+      player.moveDuration
     );
+
     for (const crate of allIncluded) {
       if (crate.state === "Moving") return true;
       crate.makeMove(

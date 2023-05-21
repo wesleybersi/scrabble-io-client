@@ -6,13 +6,22 @@ import prepareMovement from "./movement/prepare-movement";
 import makeMove from "./movement/make-move";
 import Laser from "../Laser/laser";
 import Explosion from "../explosion";
+import Spikes from "../spikes";
 
 class Crate extends Phaser.GameObjects.Sprite {
   scene: MainScene;
+  stringValue = "";
   isResetToOrigin = false;
   isMoving = false;
-  crateType!: "Wood" | "Metal" | "Deflector" | "TNT";
+  isFalling = false;
+  crateType!: "Wood" | "Metal" | "Deflector" | "Explosive" | "Nuke" | "Key";
   item: "Key" | "None" = "None";
+  extension: {
+    top: Spikes | null;
+    right: Spikes | null;
+    bottom: Spikes | null;
+    left: Spikes | null;
+  } = { top: null, right: null, bottom: null, left: null };
   direction!: Direction;
   weight = 1;
   row!: number;
@@ -57,7 +66,7 @@ class Crate extends Phaser.GameObjects.Sprite {
   isBlockingLaser: Map<string, Laser> = new Map();
   constructor(
     scene: MainScene,
-    crateType: "Wood" | "Metal" | "Deflector" | "TNT",
+    crateType: "Wood" | "Metal" | "Deflector" | "Explosive" | "Nuke",
     frame: number,
     row: number,
     col: number,
@@ -80,19 +89,31 @@ class Crate extends Phaser.GameObjects.Sprite {
     };
     this.y = y + scene.cellSize / 2;
     this.x = x + scene.cellSize / 2;
-    this.hp = 5;
+    this.setHP();
     this.connectedTo = Object.assign({}, allCardinalsUndefined);
     this.adjacentCrates = Object.assign({}, allCardinalsUndefined);
+    this.setSpikes();
+    this.setDepth(1);
 
     const { allCrates } = this.scene;
     allCrates.set(`${row},${col}`, this);
 
-    this.update();
     if (connectBlocks) {
       this.connectShape();
     }
 
     this.scene.add.existing(this);
+
+    //Save data.
+    this.stringValue = JSON.stringify({
+      crateType,
+      frame,
+      row,
+      col,
+      x,
+      y,
+      connectBlocks,
+    });
 
     console.log(
       "New",
@@ -105,6 +126,55 @@ class Crate extends Phaser.GameObjects.Sprite {
       this.col
     );
   }
+  setSpikes() {
+    const spikes = {
+      top: Math.floor(Math.random() * 50) === 1,
+      bottom: Math.floor(Math.random() * 50) === 1,
+      left: Math.floor(Math.random() * 50) === 1,
+      right: Math.floor(Math.random() * 50) === 1,
+    };
+
+    if (spikes.top) {
+      this.extension.top = new Spikes(
+        this.scene,
+        this.x,
+        this.y,
+        this.row,
+        this.col,
+        "up"
+      );
+    }
+    if (spikes.bottom) {
+      this.extension.bottom = new Spikes(
+        this.scene,
+        this.x,
+        this.y,
+        this.row,
+        this.col,
+        "down"
+      );
+    }
+    if (spikes.left) {
+      this.extension.left = new Spikes(
+        this.scene,
+        this.x,
+        this.y,
+        this.row,
+        this.col,
+        "left"
+      );
+    }
+    if (spikes.right) {
+      this.extension.right = new Spikes(
+        this.scene,
+        this.x,
+        this.y,
+        this.row,
+        this.col,
+        "right"
+      );
+    }
+  }
   setHP(): void {
     switch (this.crateType) {
       case "Wood":
@@ -112,12 +182,15 @@ class Crate extends Phaser.GameObjects.Sprite {
         break;
       case "Metal":
         this.hp = Infinity;
-        this.weight = 1.75;
+        this.weight = 1.5;
         break;
       case "Deflector":
         this.hp = Infinity;
         break;
-      case "TNT":
+      case "Explosive":
+        this.hp = 16;
+        break;
+      case "Nuke":
         this.hp = 16;
         break;
     }
@@ -128,7 +201,7 @@ class Crate extends Phaser.GameObjects.Sprite {
 
     for (const [side, crate] of Object.entries(this.adjacentCrates)) {
       if (at && at !== side) continue;
-      if (!crate) continue;
+      if (!crate || !crate.active) continue;
       if (crate && crate.crateType !== this.crateType) continue;
       for (const part of Array.from(crate.shape)) {
         shape.add(part);
@@ -140,64 +213,65 @@ class Crate extends Phaser.GameObjects.Sprite {
       crate.shape = shape;
     }
 
-    if (shape.size === 2) {
-      if (this.crateType === "Wood") {
-        const r = Math.floor(Math.random() * 2);
-        if (this.connectedTo.right) {
-          this.setFrame(r ? 8 : 10);
-          this.connectedTo.right.setFrame(r ? 9 : 11);
-        }
-        if (this.connectedTo.left) {
-          this.connectedTo.left.setFrame(r ? 8 : 10);
-          this.setFrame(r ? 9 : 11);
-        }
-      }
-    }
+    // if (shape.size === 2) {
+    //   if (this.crateType === "Wood") {
+    //     const r = Math.floor(Math.random() * 2);
+    //     if (this.connectedTo.right) {
+    //       this.setFrame(r ? 8 : 10);
+    //       this.connectedTo.right.setFrame(r ? 9 : 11);
+    //     }
+    //     if (this.connectedTo.left) {
+    //       this.connectedTo.left.setFrame(r ? 8 : 10);
+    //       this.setFrame(r ? 9 : 11);
+    //     }
+    //   }
+    // }
 
     console.log("New shape consists of", shape.size, "pieces");
     this.shape = shape;
   }
 
   update() {
-    const { allCrates } = this.scene;
+    const { allCrates, resetAll } = this.scene;
 
-    if (this.scene.editor.enabled) {
+    if (resetAll) {
+      //TODO - Method that resets to original state. Or remembers it at the start.
       //Reset crate to original state
       this.alpha = 1;
-      if (this.isResetToOrigin) return;
+
       this.setActive(true);
       this.setHP();
 
-      const currentPos = `${this.row},${this.col}`;
-      const originalPos = `${this.origin.row},${this.origin.col}`;
-
-      if (allCrates.get(currentPos) === this) {
-        allCrates.delete(currentPos);
-      }
-
-      allCrates.set(originalPos, this);
       this.row = this.origin.row;
       this.col = this.origin.col;
       this.y = this.origin.y;
       this.x = this.origin.x;
-
-      this.isResetToOrigin = true;
-    } else if (!this.scene.editor.enabled) this.isResetToOrigin = false;
+    }
 
     if (!this.active) {
       this.alpha = 0;
+      for (const [side, spikes] of Object.entries(this.extension)) {
+        if (spikes) {
+          spikes.alpha = 0;
+        }
+      }
       return;
+    } else {
+      for (const [side, spikes] of Object.entries(this.extension)) {
+        if (spikes) {
+          spikes.update(this.x, this.y);
+        }
+      }
     }
+
     if (this.isMoving) return;
 
     if (this.hp <= 0) {
-      if (this.crateType === "TNT") {
+      if (this.crateType === "Explosive") {
         this.explode();
-        this.state = "Destroyed";
         this.hp = 0;
       } else {
         this.setActive(false);
-        // this.remove();
       }
       return;
     }
@@ -217,7 +291,6 @@ class Crate extends Phaser.GameObjects.Sprite {
       right: allCrates.get(`${right.row},${right.col}`),
       left: allCrates.get(`${left.row},${left.col}`),
     };
-    // console.log(this.adjacent);
   }
 
   prepareMovement(direction: Direction) {
@@ -240,7 +313,7 @@ class Crate extends Phaser.GameObjects.Sprite {
       if (explodingTiles.has(`${tile.row},${tile.col}`)) continue;
 
       const crate = this.adjacentCrates[pos as Cardinal];
-      if (crate && crate.crateType === "TNT") continue;
+      if (crate && crate.active && crate.crateType === "Explosive") continue;
       new Explosion(
         this.scene,
         tile.col * cellSize + cellSize / 2,
@@ -255,8 +328,9 @@ class Crate extends Phaser.GameObjects.Sprite {
 
     for (const [pos, tile] of Object.entries(this.adjacentCrates)) {
       if (!tile) continue;
+      if (tile && !tile.active) continue;
       if (explodingTiles.has(`${tile.row},${tile.col}`)) continue;
-      if (tile?.crateType === "TNT") {
+      if (tile?.crateType === "Explosive") {
         tile.explode(explodingTiles);
       }
     }
@@ -269,6 +343,12 @@ class Crate extends Phaser.GameObjects.Sprite {
       if (!portal) continue;
       if (portal.row === this.row && portal.col === this.col) {
         portal.remove();
+      }
+    }
+
+    for (const [side, spikes] of Object.entries(this.extension)) {
+      if (spikes) {
+        spikes.destroy();
       }
     }
 

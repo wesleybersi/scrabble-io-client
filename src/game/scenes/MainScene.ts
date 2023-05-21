@@ -1,7 +1,7 @@
 import Phaser from "phaser";
 import { Player } from "../entities/Player/player";
 import Portal from "../entities/portal";
-import Explosion from "../entities/explosion";
+
 import Crate from "../entities/Crate/crate";
 
 import Editor from "../entities/editor";
@@ -13,8 +13,13 @@ import spritesheetPlayer from "../assets/images/spritesheets/player.png";
 import spritesheetCrates from "../assets/images/spritesheets/crates.png";
 import spritesheetExplosion from "../assets/images/spritesheets/explosion.png";
 import spritesheetCracks from "../assets/images/spritesheets/wallcrack.png";
+import spritesheetOil from "../assets/images/spritesheets/oil.png";
 
 import imageCornerpiece from "../assets/images/cornerpiece.png";
+import imageEntrance from "../assets/images/entrance.png";
+import imageSpikes from "../assets/images/spikes.png";
+import imageKey from "../assets/images/key.png";
+import imageBubble from "../assets/images/bubble.png";
 
 import cursor from "../assets/images/bigger-cursor.png";
 
@@ -32,13 +37,19 @@ import Cursor from "../entities/cursor";
 
 export default class MainScene extends Phaser.Scene {
   grid!: Phaser.GameObjects.Grid;
+  resetAll = false;
   cursor!: Cursor;
-  rowCount = 100;
-  colCount = 100;
+  rowCount = 200;
+  colCount = 200;
   cellSize = 32;
   player!: Player;
+
+  gameState: { crates: string } = { crates: "" };
+
+  originalStateTracker: { crates: Map<string, Crate> } = { crates: new Map() };
   allCrates: Map<string, Crate> = new Map();
   allLasers: Map<string, Laser> = new Map();
+  allObjects: Map<string, Crate> = new Map();
   buttons = {
     pointerDown: false,
     meta: false,
@@ -71,6 +82,9 @@ export default class MainScene extends Phaser.Scene {
     this.load.audio("splat", sfxSplat);
 
     this.load.image("cornerpiece", imageCornerpiece);
+    this.load.image("entrance", imageEntrance);
+    this.load.image("spikes", imageSpikes);
+    this.load.image("bubble", imageBubble);
 
     this.load.spritesheet("cursor", cursor, {
       frameWidth: 38,
@@ -106,11 +120,35 @@ export default class MainScene extends Phaser.Scene {
       frameWidth: 32,
       frameHeight: 32,
     });
+    this.load.spritesheet("oil", spritesheetOil, {
+      frameWidth: 32,
+      frameHeight: 32,
+    });
   }
 
   create() {
-    const canvasWidth = Number(this.game.config.width);
-    const canvasHeight = Number(this.game.config.height);
+    //TODO - Full blown local storage function
+    //Eventually, we can turn these into JSON files and create levels / arenas
+    const storedCrates = localStorage.getItem("crates");
+    if (storedCrates) {
+      for (const storedCrate of JSON.parse(storedCrates)) {
+        const { crateType, frame, row, col, x, y, connectBlocks } =
+          JSON.parse(storedCrate);
+        const crate = new Crate(
+          this,
+          crateType,
+          frame,
+          row,
+          col,
+          x,
+          y,
+          connectBlocks
+        );
+
+        this.originalStateTracker.crates.set(`${row},${col}`, crate);
+      }
+    }
+
     const worldWidth = this.colCount * this.cellSize;
     const worldHeight = this.rowCount * this.cellSize;
 
@@ -132,21 +170,16 @@ export default class MainScene extends Phaser.Scene {
 
     this.portals = { a: null, b: null };
 
-    const { x: playerX, y: playerY } = randomPosition(
-      this.rowCount,
-      this.colCount,
-      this.cellSize
-    );
+    const playerX = (this.colCount / 2) * this.cellSize + this.cellSize / 2;
+    const playerY = (this.rowCount / 2) * this.cellSize + this.cellSize / 2;
     this.player = new Player(this, playerX, playerY);
     const camera = this.cameras.main;
 
     camera.setBounds(0, 0, worldWidth, worldHeight);
     camera.zoom = this.gameZoomLevel;
-    camera.setDeadzone(
-      (canvasWidth * 0.5) / camera.zoom,
-      (canvasHeight * 0.5) / camera.zoom
-    );
-    camera.startFollow(this.player, true, 0.1, 0.1);
+
+    // camera.setDeadzone(camera.worldView.width / camera.zoom, camera.worldView.height / camera.zoom);
+    // camera.startFollow(this.player, true, 0.1, 0.1);
     camera.roundPixels = true;
     camera.centerOn(this.player.x, this.player.y);
     this.editor = new Editor(this, camera, this.buttons, this.player);
@@ -155,6 +188,15 @@ export default class MainScene extends Phaser.Scene {
 
     const tile = this.baseLayer?.getTileAt(8, 5);
     if (tile) console.log(tile);
+
+    //ANCHOR Custom events
+    this.events.on(
+      "Player Moving",
+      (message: string) => {
+        console.log(message);
+      },
+      this
+    );
 
     //ANCHOR Mouse events
     this.input.mouse?.disableContextMenu();
@@ -174,12 +216,42 @@ export default class MainScene extends Phaser.Scene {
       this.buttons.pointerDown = true;
     });
 
+    this.input.on("wheel", (pointer: Phaser.Input.Pointer) => {
+      if (pointer.deltaY > 0) {
+        if (this.gameZoomLevel < 5) {
+          this.gameZoomLevel += 1;
+          camera.zoom = this.gameZoomLevel;
+          camera.centerOn(this.player.x, this.player.y);
+        }
+      } else if (pointer.deltaY < 0) {
+        if (this.gameZoomLevel > 1) {
+          this.gameZoomLevel -= 1;
+          camera.zoom = this.gameZoomLevel;
+          camera.centerOn(this.player.x, this.player.y);
+        }
+      }
+    });
+
     //ANCHOR Keyboard events
     this.input.keyboard?.on("keydown", (event: KeyboardEvent) => {
       switch (event.key) {
         case "]":
           if (this.editor.enabled) {
             //PLAY
+
+            //Make copies
+            //TODO Function
+
+            const crateStorage = [];
+
+            this.originalStateTracker.crates = new Map();
+            for (const [pos, crate] of this.allCrates) {
+              this.originalStateTracker.crates.set(pos, crate);
+              crateStorage.push(crate.stringValue);
+            }
+            this.gameState.crates = JSON.stringify(crateStorage);
+            localStorage.setItem("crates", this.gameState.crates);
+
             this.editor.disable();
             this.player.state = "Idle";
             this.sound.play("edit-mode");
@@ -191,6 +263,7 @@ export default class MainScene extends Phaser.Scene {
             camera.zoom = this.gameZoomLevel;
           } else if (!this.editor.enabled) {
             //EDIT
+            this.resetAll = true;
             this.editor.enable();
             this.player.state = "Editing";
             this.scene.launch("Editor-Panel", this);
@@ -244,33 +317,42 @@ export default class MainScene extends Phaser.Scene {
   }
 
   update(time: number, delta: number) {
+    const camera = this.cameras.main;
+
     this.frameCounter++;
     if (this.frameCounter % 60 === 0) {
       this.frameCounter = 0;
     }
 
     if (this.allLasers.size > 0) {
-      for (const [pos, laser] of this.allLasers) {
+      for (const [, laser] of this.allLasers) {
         if (laser && laser.valid) laser.update();
       }
     }
 
-    if (this.allCrates.size > 0) {
-      for (const [pos, crate] of this.allCrates) {
-        if (crate) crate.update();
+    if (this.resetAll) {
+      //Returns all crates to their original states, as stored in the startState object
+      this.allCrates = new Map();
+      for (const [pos, crate] of this.originalStateTracker.crates) {
+        const resetPos = `${crate.origin.row},${crate.origin.col}`;
+        this.allCrates.set(resetPos, crate);
       }
+    }
+
+    for (const [, crate] of this.allCrates) {
+      if (crate) crate.update();
     }
 
     this.player.update();
 
-    this.stateText?.destroy();
-    this.stateText = this.add.text(
-      this.cameras.main.worldView.left + this.colCount * this.cellSize - 75,
-      this.cameras.main.worldView.top + this.cellSize,
-      `${this.player.state}`,
-      { fontSize: "12px" }
-    );
-    this.stateText.setDepth(200);
+    // this.stateText?.destroy();
+    // this.stateText = this.add.text(
+    //   camera.worldView.right - this.cellSize * 2,
+    //   camera.worldView.top + this.cellSize,
+    //   `${this.player.state}`,
+    //   { fontSize: "12px" }
+    // );
+    // this.stateText.setDepth(200);
 
     if (this.debugTrigger) {
       this.debugTrigger = false;
@@ -280,5 +362,6 @@ export default class MainScene extends Phaser.Scene {
         .filter((obj) => obj.active)
         .forEach((obj) => console.log(obj.name));
     }
+    if (this.resetAll) this.resetAll = false;
   }
 }

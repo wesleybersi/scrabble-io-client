@@ -53,6 +53,9 @@ export default function prepareMovement(
   for (const [side, c] of Object.entries(crate.adjacentCrates)) {
     if (aborted) break;
     if (!c) continue;
+    if (!c.active) continue;
+    if (c.isFalling) continue;
+
     //If connected to piece in portal?
 
     if (!crate.connectedTo[side as Cardinal] && movingTowards !== side)

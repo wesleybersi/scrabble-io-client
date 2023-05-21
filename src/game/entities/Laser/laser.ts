@@ -10,6 +10,7 @@ import drawExpanse from "./draw/draw-expanse";
 
 class Laser extends Phaser.GameObjects.Line {
   scene: MainScene;
+  stringValue = "";
   valid = false;
   base!: Phaser.GameObjects.Graphics;
   rose!: Phaser.GameObjects.Graphics;
@@ -63,6 +64,13 @@ class Laser extends Phaser.GameObjects.Line {
     this.endX = this.x;
     this.endY = this.y;
     this.index = index;
+    this.stringValue = JSON.stringify({
+      row,
+      col,
+      index,
+      direction,
+      isOscilate,
+    });
 
     if (this.index === 0) {
       //Snap to nearby wall

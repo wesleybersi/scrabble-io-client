@@ -3,10 +3,21 @@ import Editor from "../entities/editor";
 import Cursor from "../entities/cursor";
 class EditorPanel extends Phaser.Scene {
   graphics!: Phaser.GameObjects.Graphics;
+  sidebarBg!: Phaser.GameObjects.Graphics;
+
+  selectedCategory: "walls" | "floor" | "objects" = "objects";
+
+  categoryTabs!: Phaser.GameObjects.Container;
+  itemGrid!: Phaser.GameObjects.Container;
+  hideButton!: Phaser.GameObjects.Graphics;
+
   editor!: Editor;
-  currentText!: Phaser.GameObjects.Text;
+  currentItemText!: Phaser.GameObjects.Text;
   cursor!: Cursor;
-  editorZoomLevel = 2;
+  alwaysRevertToOriginalState = true;
+  canvasHeight = window.innerHeight;
+  canvasWidth = window.innerWidth;
+  isOpen = true;
   constructor() {
     super({ key: "Editor-Panel" });
   }
@@ -14,122 +25,177 @@ class EditorPanel extends Phaser.Scene {
   create(main: MainScene) {
     this.editor = main.editor;
     this.cursor = main.cursor;
-    main.cameras.main.zoom = this.editorZoomLevel;
 
-    const cellSize = this.registry.get("cellSize");
-    const canvasWidth = Number(this.game.config.width);
-    const canvasHeight = Number(this.game.config.height);
+    const sidebarWidth = 420;
+    const sidebarHeight = window.innerHeight;
+    const padding = 20;
 
-    this.graphics = this.add.graphics();
+    this.sidebarBg = this.add.graphics();
+    this.sidebarBg.fillStyle(0xffffff, 0.65);
+    this.sidebarBg.fillRect(0, 0, sidebarWidth, sidebarHeight);
 
-    // Create the sidebar container
-    const sidebar = this.add.container(0, 0);
+    //ANCHOR Grid with walls
 
-    // Create a background for the sidebar
-    const sidebarBg = this.add.graphics();
-    sidebarBg.fillStyle(0x333333, 1);
-    sidebarBg.fillRect(0, 0, 64, Number(this.game.config.height));
-    sidebar.add(sidebarBg);
+    const createCategoryTabs = () => {
+      const width = sidebarWidth - padding * 2;
+      const amount = Object.keys(categories).length;
 
-    //Wall options
-    this.add
-      .text(20, 20, "1 - Dark Wall", { fontSize: "8px" })
-      .setInteractive()
-      .on("pointerdown", () => {
-        this.editor.selected = "Wall";
-        console.log("Editor: Wall-Dark Selected");
-      });
+      this.categoryTabs = this.add.container(0, 0);
 
-    // this.add
-    //   .text(20, 60, "2 - Light Wall", { fontSize: "8px" })
-    //   .setInteractive()
-    //   .on("pointerdown", () => {
-    //     this.editor.selection = "Wall-Light";
-    //     console.log("Editor: Wall-Light Selected");
-    //   });
+      const tabConfig = {
+        amount, // Number of columns
+        itemWidth: width / amount - 10 + 10 / amount,
+        itemHeight: 40, // Height of each grid item
+        paddingX: 10, // Horizontal padding between items
+        paddingY: 0, // Vertical padding between items
+      };
 
-    // this.add
-    //   .text(20, 100, "3 - Grate", { fontSize: "8px" })
-    //   .setInteractive()
-    //   .on("pointerdown", () => {
-    //     this.editor.selection = "Wall-Grate";
-    //     console.log("Editor: Wall-Grate Selected");
-    //   });
+      this.categoryTabs.x = 0 + tabConfig.itemWidth / 2 + padding;
+      this.categoryTabs.y = 0 + tabConfig.itemHeight / 2 + padding;
+      for (let i = 0; i < Object.keys(categories).length; i++) {
+        const item = this.add.rectangle(
+          0,
+          0,
+          tabConfig.itemWidth,
+          tabConfig.itemHeight,
+          0xffffff
+        );
+        item.setInteractive();
 
-    //Movable
-    this.add
-      .text(20, 180, "4 - Movable Block", { fontSize: "8px" })
-      .setInteractive()
-      .on("pointerdown", () => {
-        this.editor.selected = "Crate";
-        console.log("Editor: Movable Selected");
-      });
-    //Movable
-    this.add
-      .text(20, 220, "5 - Emancipation Grill", { fontSize: "8px" })
-      .setInteractive()
-      .on("pointerdown", () => {
-        this.editor.selected = "Crate";
-        console.log("Editor: Movable Selected");
-      });
+        const x = i * (tabConfig.itemWidth + tabConfig.paddingX);
+        const y = 0;
 
-    //Floor Tiles
-    this.add
-      .text(20, 300, "7 - Ice", { fontSize: "8px" })
-      .setInteractive()
-      .on("pointerdown", () => {
-        this.editor.selected = "Ice";
-        console.log("Editor: Ice Selected");
-      });
-    this.add
-      .text(20, 340, "8 - Water", { fontSize: "8px" })
-      .setInteractive()
-      .on("pointerdown", () => {
-        this.editor.selected = "Water";
-        console.log("Editor: Water Selected");
-      });
-    this.add
-      .text(20, 380, "9 - Laser", { fontSize: "8px" })
-      .setInteractive()
-      .on("pointerdown", () => {
-        this.editor.selected = "Water";
-        console.log("Editor: Water Selected");
-      });
+        item.setPosition(x, y);
 
-    //Button
+        this.categoryTabs.add(item);
 
-    this.add.text(
-      20,
-      Number(this.game.config.height) - 180,
-      "Click to rotate (if possible)",
-      {
-        fontSize: "4px",
+        item.on(
+          "pointerdown",
+          (event: PointerEvent) => {
+            const keys = Object.keys(categories);
+
+            this.input.stopPropagation();
+
+            this.events.emit("Selected Category", keys[i]);
+          },
+          this
+        );
       }
-    );
-    this.add.text(
-      20,
-      Number(this.game.config.height) - 140,
-      "Right click to copy",
-      {
-        fontSize: "4px",
-      }
-    );
+    };
+    const createItemGrid = () => {
+      if (this.itemGrid) this.itemGrid.destroy();
 
-    this.add.text(
-      20,
-      Number(this.game.config.height) - 100,
-      "Shift to combine",
-      {
-        fontSize: "4px",
-      }
-    );
+      this.itemGrid = this.add.container(0, 140); // Adjust the position as desired
+      const gridConfig = {
+        rows: 4, // Number of rows
+        columns: 4, // Number of columns
+        itemWidth: 80, // Width of each grid item
+        itemHeight: 80, // Height of each grid item
+        paddingX: 20, // Horizontal padding between items
+        paddingY: 20, // Vertical padding between items
+      };
 
-    this.add.text(20, Number(this.game.config.height) - 60, "CMD to delete", {
-      fontSize: "4px",
+      const gridWidth =
+        gridConfig.columns * (gridConfig.itemWidth + gridConfig.paddingX) -
+        gridConfig.paddingX;
+      const gridHeight =
+        gridConfig.rows * (gridConfig.itemHeight + gridConfig.paddingY) -
+        gridConfig.paddingY;
+
+      const topLine = this.add.graphics();
+      this.itemGrid.add(topLine);
+      topLine.fillStyle(0x000000, 0.35);
+      topLine.fillRect(-40, -60, 380, 2);
+
+      this.itemGrid.x = (sidebarWidth - gridWidth) / 2 + padding * 2;
+
+      const category = categories[this.selectedCategory as CategoryKey];
+      if (!category) return;
+
+      for (let i = 0; i < category.items.length; i++) {
+        const item = this.add.rectangle(
+          0,
+          0,
+          gridConfig.itemWidth,
+          gridConfig.itemHeight,
+          0xffffff
+        ); // Adjust the appearance of the grid item as desired
+        item.setInteractive(); // Enable interactivity for the grid item
+
+        // Calculate the position of the grid item based on the row and column
+        const row = Math.floor(i / gridConfig.columns);
+        const col = i % gridConfig.columns;
+        const x = col * (gridConfig.itemWidth + gridConfig.paddingX);
+        const y = row * (gridConfig.itemHeight + gridConfig.paddingY);
+
+        // Set the position of the grid item within the container
+        item.setPosition(x, y);
+
+        // Add the grid item to the container
+        this.itemGrid.add(item);
+
+        // Handle click events for the grid item
+        item.on(
+          "pointerdown",
+          (event: PointerEvent) => {
+            this.input.stopPropagation();
+
+            this.events.emit("Selected Item", i);
+          },
+          this
+        );
+      }
+    };
+    const createHideButton = () => {
+      this.hideButton = this.add.graphics();
+
+      const width = 20;
+      const height = 60;
+
+      this.hideButton.fillStyle(0xffffff, 0.65);
+      this.hideButton.fillRoundedRect(
+        sidebarWidth,
+        sidebarHeight / 2 - height / 2,
+        width,
+        height,
+        { tl: 0, tr: 16, bl: 0, br: 16 }
+      );
+
+      this.hideButton.setInteractive().on(
+        "pointerdown",
+        () => {
+          console.log("Hello");
+          // this.input.stopPropagation();
+          this.tweens.add({
+            targets: [this.sidebarBg, this.itemGrid, this.categoryTabs],
+            duration: 350,
+            ease: "Quad.InOut",
+            x: -sidebarWidth,
+          });
+        },
+        this
+      );
+    };
+    createCategoryTabs();
+    createItemGrid();
+    createHideButton();
+
+    this.events.on("Selected Item", (index: number) => {
+      this.currentItemText?.destroy();
+      this.currentItemText = this.add.text(0, 0, "Item", { fontSize: "16px" });
+      this.itemGrid.add(this.currentItemText);
+    });
+
+    this.events.on("Selected Category", (key: string) => {
+      this.selectedCategory = key as CategoryKey;
+      createItemGrid();
+    });
+
+    this.sidebarBg.on("pointerdown", () => {
+      this.input.stopPropagation();
     });
 
     this.input.keyboard?.on("keydown", (event: KeyboardEvent) => {
-      const camera = main.cameras.main;
       const player = main.player;
       switch (event.key) {
         case "w":
@@ -169,26 +235,59 @@ class EditorPanel extends Phaser.Scene {
 
       this.editor.setScreenBorder();
     });
-
-    // Position the sidebar on the left side of the screen
-    sidebar.setPosition(0, 0);
   }
   update() {
     if (this.editor.enabled) {
-      this.editor.setScreenBorder();
-
-      if (this.currentText) this.currentText.destroy();
-      this.currentText = this.add.text(
-        20,
-        500,
-        `Selection: ${this.editor.selected}`,
-        {
-          fontSize: "8px",
-        }
-      );
+      this.canvasHeight = window.innerHeight;
     }
     this.cursor.update();
   }
 }
 
 export default EditorPanel;
+
+type CategoryKey = "walls" | "floor" | "objects";
+
+const categories = {
+  walls: { name: "Wall Tiles", items: ["Grey Wall", "White Wall", "Grate"] },
+  floor: {
+    name: "Floor Tiles",
+    items: [
+      "Empty",
+      "Ice",
+      "Water",
+      "Lava",
+      "Sand",
+      "Empty",
+      "Ice",
+      "Water",
+      "Lava",
+      "Sand",
+      "Empty",
+      "Ice",
+      "Water",
+      "Lava",
+      "Sand",
+    ],
+  },
+  objects: {
+    name: "Objects",
+    items: [
+      {
+        name: "Wooden Crate",
+        description:
+          "The wooden crate is a lightweight container that breaks easily when subjected to pressure.",
+      },
+      {
+        name: "Metal Crate",
+        description:
+          "Crafted from solid steel, this crate can be moved around to create barriers and strategically block pathways. Its formidable design makes it hard to destroy, adding an extra layer of challenge for you as you navigate through the game world.",
+      },
+      "Explosive Crate",
+      "Portal Crate",
+      "Laser",
+      "Oil Spill",
+      "Bubble Shooter",
+    ],
+  },
+};

@@ -4,7 +4,11 @@ import MainScene from "../../scenes/MainScene";
 // import placePortal from "./portals/placePortal";
 import { Clone } from "./clone";
 import { Cardinal, Direction } from "../../types";
-import { cardinalToDirection, directionToAngle } from "../../utils/opposite";
+import {
+  cardinalToDirection,
+  directionToAngle,
+  getOppositeSide,
+} from "../../utils/opposite";
 import { allCardinalsNull } from "../../utils/constants";
 import resetPortals from "./portals/resetPortals";
 import { portalRemoved } from "./portals/resetPortals";
@@ -17,9 +21,10 @@ import handleMovement from "./movement/move";
 
 export class Player extends Phaser.GameObjects.Sprite {
   scene: MainScene;
+  hasReset = false;
   highlight!: Phaser.GameObjects.Graphics;
-  initialMoveDuration = 210;
-  moveDuration = 210;
+  initialMoveDuration = 200;
+  moveDuration = 200;
   crosshair!: Crosshair;
   moving = { left: false, right: false, up: false, down: false };
   forceMovement = { left: false, right: false, up: false, down: false };
@@ -64,6 +69,9 @@ export class Player extends Phaser.GameObjects.Sprite {
     left: Crate | null;
   };
   isSliding = false;
+  isOily = false;
+  spiked = false;
+  deadCounter = 0;
   constructor(scene: MainScene, x: number, y: number) {
     super(scene as MainScene, x, y, "player", 0);
     this.scene = scene;
@@ -92,17 +100,13 @@ export class Player extends Phaser.GameObjects.Sprite {
   }
   enableMovement() {
     this.scene.input.keyboard?.on("keydown", (event: KeyboardEvent) => {
+      if (this.state === "Dead") return;
       switch (event.key) {
-        case "r":
-          {
-            const { portals } = this.scene;
-            if (portals.a || portals.b) this.resetPortals();
-          }
-          if (this.state === "Dead") {
-            this.state = "Idle";
-          }
+        case "r": {
+          const { portals } = this.scene;
+          if (portals.a || portals.b) this.resetPortals();
+        }
       }
-
       for (const [direction, movementForced] of Object.entries(
         this.forceMovement
       )) {
@@ -110,24 +114,28 @@ export class Player extends Phaser.GameObjects.Sprite {
       }
 
       switch (event.key) {
+        case "W":
         case "w":
         case "ArrowUp":
           this.moving.up = true;
           this.lastMove = "up";
           this.move();
           break;
+        case "A":
         case "a":
         case "ArrowLeft":
           this.moving.left = true;
           this.lastMove = "left";
           this.move();
           break;
+        case "S":
         case "s":
         case "ArrowDown":
           this.moving.down = true;
           this.lastMove = "down";
           this.move();
           break;
+        case "D":
         case "d":
         case "ArrowRight":
           this.moving.right = true;
@@ -138,19 +146,23 @@ export class Player extends Phaser.GameObjects.Sprite {
     });
     this.scene.input.keyboard?.on("keyup", (event: KeyboardEvent) => {
       switch (event.key) {
+        case "W":
         case "w":
         case "ArrowUp":
           this.moving.up = false;
 
           break;
+        case "A":
         case "a":
         case "ArrowLeft":
           this.moving.left = false;
           break;
+        case "S":
         case "s":
         case "ArrowDown":
           this.moving.down = false;
           break;
+        case "D":
         case "d":
         case "ArrowRight":
           this.moving.right = false;
@@ -161,7 +173,66 @@ export class Player extends Phaser.GameObjects.Sprite {
       if (this.scene.editor.enabled) return;
       this.placePortal(pointer.rightButtonDown() ? "b" : "a");
 
-      if (pointer.rightButtonDown()) return;
+      if (pointer.rightButtonDown()) {
+        const { allCrates, tilemap } = this.scene;
+        const { walls } = tilemap;
+
+        console.log(this.angle);
+        if (this.angle === 0) {
+          const recurseUp = (row: number, col: number) => {
+            const pos = `${row},${col}`;
+            const crate = allCrates.get(pos);
+            const wall = walls.getTileAt(col, row);
+            if (wall) return;
+            if (crate && crate.active) {
+              crate.connectShape("top");
+            }
+            recurseUp(row - 1, col);
+          };
+          recurseUp(this.row - 1, this.col);
+        }
+        if (this.angle === 180) {
+          const recurseDown = (row: number, col: number) => {
+            const pos = `${row},${col}`;
+            const crate = allCrates.get(pos);
+            const wall = walls.getTileAt(col, row);
+            if (wall) return;
+            if (crate && crate.active) {
+              crate.connectShape("bottom");
+            }
+            recurseDown(row + 1, col);
+          };
+          recurseDown(this.row + 1, this.col);
+        }
+        if (this.angle === 90) {
+          const recurseLeft = (row: number, col: number) => {
+            const pos = `${row},${col}`;
+            const crate = allCrates.get(pos);
+            const wall = walls.getTileAt(col, row);
+            if (wall) return;
+            if (crate && crate.active) {
+              crate.connectShape("right");
+            }
+            recurseLeft(row, col + 1);
+          };
+          recurseLeft(this.row, this.col + 1);
+        }
+        if (this.angle === -90) {
+          const recurseLeft = (row: number, col: number) => {
+            const pos = `${row},${col}`;
+            const crate = allCrates.get(pos);
+            const wall = walls.getTileAt(col, row);
+            if (wall) return;
+            if (crate && crate.active) {
+              crate.connectShape("left");
+            }
+            recurseLeft(row, col - 1);
+          };
+          recurseLeft(this.row, this.col - 1);
+        }
+
+        return;
+      }
 
       const { hover, allCrates } = this.scene;
 
@@ -169,6 +240,9 @@ export class Player extends Phaser.GameObjects.Sprite {
         if (adjacent.row === hover.row && adjacent.col === hover.col) {
           const crate = allCrates.get(`${hover.row},${hover.col}`);
           if (crate && crate.active) {
+            const oppositeSide = getOppositeSide(side as Cardinal);
+            if (crate.extension[oppositeSide]) return;
+
             this.holding[side as Cardinal] = crate;
             this.state = "Holding";
             return;
@@ -238,19 +312,18 @@ export class Player extends Phaser.GameObjects.Sprite {
 
   resetToOrigin() {
     const { cellSize } = this.scene;
+
     this.row = this.origin.row;
     this.col = this.origin.col;
     this.x = this.origin.col * cellSize + cellSize / 2;
     this.y = this.origin.row * cellSize + cellSize / 2;
-    this.scene.tweens.add({
-      targets: [this],
-      scale: 1,
-      duration: 750,
-      ease: "Quad.InOut",
-      onComplete: () => {
-        this.state = "Idle";
-      },
-    });
+    this.holding = Object.assign({}, allCardinalsNull);
+    this.moving = Object.assign({}, allDirectionsFalse);
+    this.forceMovement = Object.assign({}, allDirectionsFalse);
+    const coolDown = setTimeout(() => {
+      this.state = "Idle";
+      clearTimeout(coolDown);
+    }, 500);
   }
 
   update() {
@@ -272,13 +345,11 @@ export class Player extends Phaser.GameObjects.Sprite {
       const lastAngle = directionToAngle(this.lastMove);
       this.animateToAngle(lastAngle);
     };
+
     switch (this.state) {
-      case "Disabled":
-        this.setDepth(2);
-        this.anims.play("Idle");
-        break;
       case "Idle":
         {
+          this.deadCounter = 0;
           this.setDepth(2);
           this.alpha = 1;
           this.scene.game.canvas.style.cursor = "auto";
@@ -286,6 +357,7 @@ export class Player extends Phaser.GameObjects.Sprite {
 
           const lastAngle = directionToAngle(this.lastMove);
           this.animateToAngle(lastAngle);
+          this.hasReset = false;
         }
         break;
 
@@ -320,12 +392,15 @@ export class Player extends Phaser.GameObjects.Sprite {
         movementToAngle();
         break;
       case "Dead":
-        {
-          this.scale = 0;
-          console.warn("YOU FUCKING DIED");
+        console.warn("YOU FUCKING DIED");
+        // this.alpha = 0.5;
+        this.anims.play("Idle");
+        this.deadCounter++;
+        if (this.deadCounter > 200) {
           this.resetToOrigin();
         }
-        break;
+
+        return;
       case "Editing":
         this.resetToOrigin();
         this.forceMovement = Object.assign({}, allDirectionsFalse);
@@ -394,7 +469,7 @@ export class Player extends Phaser.GameObjects.Sprite {
     }
   }
 
-  animateToAngle(targetAngle: number, rotationSpeed = 10) {
+  animateToAngle(targetAngle: number, rotationSpeed = 16) {
     // Calculate the difference between the angles
     let diff = targetAngle - this.angle;
 

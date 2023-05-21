@@ -6,6 +6,7 @@ import {
 import { adjacentToTileIndex } from "./wall-tiles/detect-surrounding-walls";
 import Cracks from "../cracks";
 import CornerPiece from "../cornerpiece";
+import OilSpill from "../oil";
 // import { detectCornerPiece } from "./wall-tiles/detect-surrounding-walls";
 
 export default class BasicTilemap {
@@ -69,11 +70,9 @@ export default class BasicTilemap {
 
     this.placeInitialWalls();
 
-    // this.placeEmptyFloorTile(this.scene.player.col, this.scene.player.row);
-
     // Define the size of the rectangle
-    const rectangleWidth = 7;
-    const rectangleHeight = 7;
+    const rectangleWidth = 40;
+    const rectangleHeight = 35;
 
     // Calculate the starting position of the rectangle
     const startX = this.scene.player.col - Math.floor(rectangleWidth / 2);
@@ -102,7 +101,7 @@ export default class BasicTilemap {
     this.removeWall(col, row);
 
     // const randomTile = Math.floor(Math.random() * 3);
-    const newTile = this.floor.putTileAt(3, col, row);
+    const newTile = this.floor.putTileAt(1, col, row);
     newTile.setCollision(false, false, false, false);
     newTile.properties = { name: "Empty" };
     newTile.alpha = 0.85;
@@ -114,11 +113,24 @@ export default class BasicTilemap {
     this.removeWall(col, row);
 
     // const randomTile = Math.floor(Math.random() * 3);
-    const newTile = this.floor.putTileAt(4, col, row);
+    const newTile = this.floor.putTileAt(2, col, row);
     newTile.setCollision(false, false, false, false);
     newTile.properties = { name: "Ice" };
     newTile.alpha = 0.85;
   }
+
+  placeLavaTile(col: number, row: number) {
+    disconnectSurroundingWalls(this.walls, row, col);
+
+    this.removeWall(col, row);
+
+    // const randomTile = Math.floor(Math.random() * 3);
+    const newTile = this.floor.putTileAt(3, col, row);
+    newTile.setCollision(false, false, false, false);
+    newTile.properties = { name: "Lava" };
+    newTile.alpha = 0.85;
+  }
+
   addCornerPiece(col: number, row: number) {
     const { cellSize } = this.scene;
     const iceTile = this.floor.getTileAt(col, row);
@@ -141,6 +153,24 @@ export default class BasicTilemap {
         row,
         col,
         iceTile
+      );
+    }
+  }
+  addOil(col: number, row: number) {
+    const { cellSize } = this.scene;
+    const floorTile = this.floor.getTileAt(col, row);
+
+    if (
+      floorTile &&
+      floorTile.properties.name === "Empty" &&
+      !floorTile.properties.oil
+    ) {
+      floorTile.properties.oil = new OilSpill(
+        this.scene,
+        col * cellSize + cellSize / 2,
+        row * cellSize + cellSize / 2,
+        row,
+        col
       );
     }
   }
@@ -186,7 +216,7 @@ export default class BasicTilemap {
         bottomRight,
       },
     };
-    newTile.alpha = 0.45;
+    newTile.alpha = 0.7;
   }
   removeWall(col: number, row: number) {
     const wall = this.walls.getTileAt(col, row);
@@ -217,6 +247,8 @@ export default class BasicTilemap {
         right: true,
       };
       this.placeWall(tile.x, tile.y);
+
+      // this.placeEmptyFloorTile(tile.x,tile.y)
     });
   }
 }
