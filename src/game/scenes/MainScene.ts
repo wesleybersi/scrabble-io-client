@@ -43,7 +43,7 @@ export default class MainScene extends Phaser.Scene {
   colCount = 200;
   cellSize = 32;
   player!: Player;
-
+  pirates = [];
   gameState: { crates: string } = { crates: "" };
 
   originalStateTracker: { crates: Map<string, Crate> } = { crates: new Map() };
