@@ -18,6 +18,7 @@ export default function tweenToTile(player: Player, col: number, row: number) {
     x: Math.floor(col * cellWidth) + cellWidth / 2,
     y: Math.floor(row * cellHeight),
   };
+  target.y -= player.z;
 
   const tween = player.scene.tweens.add({
     targets: player,
@@ -57,7 +58,7 @@ export default function tweenToTile(player: Player, col: number, row: number) {
         player.x = target.x;
         player.y = target.y;
       }
-      player.row = Math.floor(player.y) / cellHeight;
+      player.row = Math.floor(player.y + player.z) / cellHeight;
       player.col = Math.floor(player.x - cellWidth / 2) / cellWidth;
 
       if (

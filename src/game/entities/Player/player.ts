@@ -1,4 +1,5 @@
 import Portal from "../portal";
+import Wall from "../wall";
 
 import MainScene from "../../scenes/MainScene";
 // import placePortal from "./portals/placePortal";
@@ -7,6 +8,7 @@ import { Cardinal, Direction } from "../../types";
 import {
   cardinalToDirection,
   directionToAngle,
+  getOppositeDirection,
   getOppositeSide,
 } from "../../utils/opposite";
 import { allCardinalsNull } from "../../utils/constants";
@@ -21,13 +23,17 @@ import handleMovement from "./movement/move";
 
 export class Player extends Phaser.GameObjects.Sprite {
   scene: MainScene;
+  shadow!: Phaser.GameObjects.Sprite;
+  z = 0;
+  floor = 0;
   hasReset = false;
   highlight!: Phaser.GameObjects.Graphics;
-  initialMoveDuration = 200;
-  moveDuration = 200;
+  initialMoveDuration = 175;
+  moveDuration = 175;
   moving = { left: false, right: false, up: false, down: false };
   forceMovement = { left: false, right: false, up: false, down: false };
   lastMove: Direction = "up";
+  wallBelow: Wall | undefined;
   state:
     | "Idle"
     | "Moving"
@@ -89,13 +95,45 @@ export class Player extends Phaser.GameObjects.Sprite {
       bottom: { row: this.row + 1, col: this.col },
       left: { row: this.row, col: this.col - 1 },
     };
+    this.shadow = this.scene.add.sprite(
+      this.x + scene.shadowOffset.x,
+      this.y + scene.shadowOffset.y,
+      "player"
+    );
     this.highlight = scene.add.graphics();
     this.enableMovement();
     this.setDepth(1);
     this.setOrigin(0.5);
+
     this.createAnimations();
+    this.generateShadow();
 
     scene.add.existing(this);
+  }
+  generateShadow() {
+    const { shadowOffset } = this.scene;
+
+    this.shadow.x = this.x + shadowOffset.x;
+    this.shadow.y = this.y + shadowOffset.y + 12;
+    this.shadow.scaleY = -1;
+
+    this.shadow.alpha = 0.25;
+    this.shadow.setTint(0x000000);
+
+    const synchronizeAnimations = () => {
+      if (this.anims.currentAnim) {
+        // Get the key of the current animation of the parent sprite
+        const animationKey = this.anims.currentAnim.key;
+
+        if (this.shadow.anims.currentAnim?.key !== animationKey) {
+          this.shadow.anims.play(animationKey);
+        }
+      }
+      // Play the same animation on the shadow sprite
+    };
+
+    synchronizeAnimations();
+    if (this.anims.isPaused) this.shadow.anims.pause();
   }
   enableMovement() {
     this.scene.input.keyboard?.on("keydown", (event: KeyboardEvent) => {
@@ -172,66 +210,66 @@ export class Player extends Phaser.GameObjects.Sprite {
       if (this.scene.editor.enabled) return;
       this.placePortal(pointer.rightButtonDown() ? "b" : "a");
 
-      if (pointer.rightButtonDown()) {
-        const { allCrates, tilemap } = this.scene;
-        const { walls } = tilemap;
+      // if (pointer.rightButtonDown()) {
+      //   const { allCrates, tilemap } = this.scene;
+      //   const { walls } = tilemap;
 
-        console.log(this.angle);
-        if (this.angle === 0) {
-          const recurseUp = (row: number, col: number) => {
-            const pos = `${row},${col}`;
-            const crate = allCrates.get(pos);
-            const wall = walls.getTileAt(col, row);
-            if (wall) return;
-            if (crate && crate.active) {
-              crate.connectShape("top");
-            }
-            recurseUp(row - 1, col);
-          };
-          recurseUp(this.row - 1, this.col);
-        }
-        if (this.angle === 180) {
-          const recurseDown = (row: number, col: number) => {
-            const pos = `${row},${col}`;
-            const crate = allCrates.get(pos);
-            const wall = walls.getTileAt(col, row);
-            if (wall) return;
-            if (crate && crate.active) {
-              crate.connectShape("bottom");
-            }
-            recurseDown(row + 1, col);
-          };
-          recurseDown(this.row + 1, this.col);
-        }
-        if (this.angle === 90) {
-          const recurseLeft = (row: number, col: number) => {
-            const pos = `${row},${col}`;
-            const crate = allCrates.get(pos);
-            const wall = walls.getTileAt(col, row);
-            if (wall) return;
-            if (crate && crate.active) {
-              crate.connectShape("right");
-            }
-            recurseLeft(row, col + 1);
-          };
-          recurseLeft(this.row, this.col + 1);
-        }
-        if (this.angle === -90) {
-          const recurseLeft = (row: number, col: number) => {
-            const pos = `${row},${col}`;
-            const crate = allCrates.get(pos);
-            const wall = walls.getTileAt(col, row);
-            if (wall) return;
-            if (crate && crate.active) {
-              crate.connectShape("left");
-            }
-            recurseLeft(row, col - 1);
-          };
-          recurseLeft(this.row, this.col - 1);
-        }
+      //   console.log(this.angle);
+      //   if (this.angle === 0) {
+      //     const recurseUp = (row: number, col: number) => {
+      //       const pos = `${row},${col}`;
+      //       const crate = allCrates.get(pos);
+      //       const wall = walls.getTileAt(col, row);
+      //       if (wall) return;
+      //       if (crate && crate.active) {
+      //         crate.connectShape("top");
+      //       }
+      //       recurseUp(row - 1, col);
+      //     };
+      //     recurseUp(this.row - 1, this.col);
+      //   }
+      //   if (this.angle === 180) {
+      //     const recurseDown = (row: number, col: number) => {
+      //       const pos = `${row},${col}`;
+      //       const crate = allCrates.get(pos);
+      //       const wall = walls.getTileAt(col, row);
+      //       if (wall) return;
+      //       if (crate && crate.active) {
+      //         crate.connectShape("bottom");
+      //       }
+      //       recurseDown(row + 1, col);
+      //     };
+      //     recurseDown(this.row + 1, this.col);
+      //   }
+      //   if (this.angle === 90) {
+      //     const recurseLeft = (row: number, col: number) => {
+      //       const pos = `${row},${col}`;
+      //       const crate = allCrates.get(pos);
+      //       const wall = walls.getTileAt(col, row);
+      //       if (wall) return;
+      //       if (crate && crate.active) {
+      //         crate.connectShape("right");
+      //       }
+      //       recurseLeft(row, col + 1);
+      //     };
+      //     recurseLeft(this.row, this.col + 1);
+      //   }
+      //   if (this.angle === -90) {
+      //     const recurseLeft = (row: number, col: number) => {
+      //       const pos = `${row},${col}`;
+      //       const crate = allCrates.get(pos);
+      //       const wall = walls.getTileAt(col, row);
+      //       if (wall) return;
+      //       if (crate && crate.active) {
+      //         crate.connectShape("left");
+      //       }
+      //       recurseLeft(row, col - 1);
+      //     };
+      //     recurseLeft(this.row, this.col - 1);
+      //   }
 
-        return;
-      }
+      // return;
+      // }
 
       const { hover, allCrates } = this.scene;
 
@@ -258,55 +296,68 @@ export class Player extends Phaser.GameObjects.Sprite {
   }
 
   createAnimations() {
-    this.anims.create({
-      key: "Idle",
-      frames: [{ key: "player", frame: 0 }],
-      frameRate: 1,
-      repeat: -1,
-    });
-    this.anims.create({
-      key: "moving-up",
-      frames: this.anims.generateFrameNumbers("player", { start: 0, end: 2 }),
-      frameRate: 12,
-      repeat: -1,
-    });
-    this.anims.create({
-      key: "moving-right",
-      frames: this.anims.generateFrameNumbers("player", { start: 3, end: 5 }),
-      frameRate: 12,
-      repeat: -1,
-    });
-    this.anims.create({
-      key: "moving-down",
-      frames: this.anims.generateFrameNumbers("player", { start: 6, end: 8 }),
-      frameRate: 12,
-      repeat: -1,
-    });
-    this.anims.create({
-      key: "moving-left",
-      frames: this.anims.generateFrameNumbers("player", { start: 9, end: 11 }),
-      frameRate: 12,
-      repeat: -1,
-    });
+    const targets = [this, this.shadow];
 
-    this.anims.create({
-      key: "Pushing",
-      frames: this.anims.generateFrameNumbers("player", { start: 0, end: 3 }),
-      frameRate: 12,
-      repeat: -1,
-    });
-    this.anims.create({
-      key: "Pulling",
-      frames: this.anims.generateFrameNumbers("player", { start: 0, end: 3 }),
-      frameRate: 12,
-      repeat: -1,
-    });
-    this.anims.create({
-      key: "Holding",
-      frames: this.anims.generateFrameNumbers("player", { start: 0, end: 3 }),
-      frameRate: 1,
-      repeat: -1,
-    });
+    for (const target of targets) {
+      target.anims.create({
+        key: "Idle",
+        frames: [{ key: "player", frame: 0 }],
+        frameRate: 1,
+        repeat: -1,
+      });
+      target.anims.create({
+        key: "Idle",
+        frames: [{ key: "player", frame: 0 }],
+        frameRate: 1,
+        repeat: -1,
+      });
+      target.anims.create({
+        key: "moving-up",
+        frames: this.anims.generateFrameNumbers("player", { start: 0, end: 2 }),
+        frameRate: 12,
+        repeat: -1,
+      });
+      target.anims.create({
+        key: "moving-right",
+        frames: this.anims.generateFrameNumbers("player", { start: 3, end: 5 }),
+        frameRate: 12,
+        repeat: -1,
+      });
+      target.anims.create({
+        key: "moving-down",
+        frames: this.anims.generateFrameNumbers("player", { start: 6, end: 8 }),
+        frameRate: 12,
+        repeat: -1,
+      });
+      target.anims.create({
+        key: "moving-left",
+        frames: this.anims.generateFrameNumbers("player", {
+          start: 9,
+          end: 11,
+        }),
+        frameRate: 12,
+        repeat: -1,
+      });
+
+      target.anims.create({
+        key: "Pushing",
+        frames: this.anims.generateFrameNumbers("player", { start: 0, end: 3 }),
+        frameRate: 12,
+        repeat: -1,
+      });
+      target.anims.create({
+        key: "Pulling",
+        frames: this.anims.generateFrameNumbers("player", { start: 0, end: 3 }),
+        frameRate: 12,
+        repeat: -1,
+      });
+      target.anims.create({
+        key: "Holding",
+        frames: this.anims.generateFrameNumbers("player", { start: 0, end: 3 }),
+        frameRate: 1,
+        repeat: -1,
+      });
+    }
   }
 
   move() {
@@ -346,66 +397,62 @@ export class Player extends Phaser.GameObjects.Sprite {
   }
 
   update() {
-    // const movementToAngle = (invert?: boolean) => {
-    //   for (const [direction, moving] of Object.entries(this.moving)) {
-    //     if (moving) {
-    //       const angle = directionToAngle(direction as Direction, invert);
-    //       this.animateToAngle(angle);
-    //       return;
-    //     }
-    //   }
-    //   for (const [direction, moving] of Object.entries(this.forceMovement)) {
-    //     if (moving) {
-    //       const angle = directionToAngle(direction as Direction, invert);
-    //       this.animateToAngle(angle, this.state === "Sliding" ? 4 : undefined);
-    //       return;
-    //     }
-    //   }
-    //   const lastAngle = directionToAngle(this.lastMove);
-    //   this.animateToAngle(lastAngle);
-    // };
+    this.generateShadow();
+    this.shadow.setDepth(this.row + this.floor);
+    this.setDepth(this.row + this.floor);
 
-    this.setDepth(this.row);
+    const { allWalls } = this.scene;
+
+    if (this.wallBelow && this.wallBelow.col !== this.col) {
+      this.wallBelow.alpha = 1;
+    }
+
+    this.wallBelow = allWalls.get(`${this.row + 1},${this.col}`);
+    if (
+      this.wallBelow &&
+      this.wallBelow.wallType === "wall" &&
+      this.floor === 0
+    ) {
+      this.wallBelow.alpha = 0.75;
+    }
+
     switch (this.state) {
       case "Idle":
         {
           this.deadCounter = 0;
           this.alpha = 1;
           this.scene.game.canvas.style.cursor = "auto";
+          this.shadow.anims.pause();
+          this.shadow.anims.restart();
           this.anims.pause();
           this.anims.restart();
-
-          const lastAngle = directionToAngle(this.lastMove);
-          // this.animateToAngle(lastAngle);
           this.hasReset = false;
         }
         break;
-
+      case "Pulling":
       case "Pushing":
       case "Moving":
         for (const [direction, moving] of Object.entries(this.moving)) {
           if (moving) {
-            const animation = `moving-${direction}`;
+            let movementDirection = direction;
+            if (this.state === "Pulling") {
+              movementDirection = getOppositeDirection(direction as Direction);
+            }
+
+            const animation = `moving-${movementDirection}`;
             if (this.anims.currentAnim?.key !== animation)
               this.anims.play(animation);
+            break;
           }
         }
 
         break;
       case "Sliding":
         this.anims.play("Idle");
-        // movementToAngle();
         break;
       case "Holding":
         this.scene.game.canvas.style.cursor = "grab";
-        this.anims.play("Holding");
-        break;
 
-      case "Pulling":
-        if (this.anims.currentAnim?.key !== "Pulling") {
-          this.anims.play("Pulling");
-        }
-        this.scene.game.canvas.style.cursor = "grab";
         break;
       case "Falling":
         break;
@@ -441,8 +488,6 @@ export class Player extends Phaser.GameObjects.Sprite {
       if (holding) {
         const direction = cardinalToDirection(side as Cardinal);
         this.lastMove = direction;
-        // const angle = directionToAngle(direction);
-        // this.animateToAngle(angle);
         break;
       }
     }
@@ -485,26 +530,4 @@ export class Player extends Phaser.GameObjects.Sprite {
       }
     }
   }
-
-  // animateToAngle(targetAngle: number, rotationSpeed = 16) {
-  //   // Calculate the difference between the angles
-  //   let diff = targetAngle - this.angle;
-
-  //   // Handle cases where the difference is greater than 180 degrees
-  //   if (diff > 180) {
-  //     diff -= 360;
-  //   } else if (diff < -180) {
-  //     diff += 360;
-  //   }
-
-  //   if (diff !== 0) {
-  //     // Calculate the rotation direction and amount
-  //     const rotationDir = diff > 0 ? 1 : -1;
-  //     const rotationAmount = Math.min(Math.abs(diff), rotationSpeed);
-
-  //     // Apply the rotation
-  //     this.angle += rotationDir * rotationAmount;
-  //     this.angle = ((this.angle % 360) + 360) % 360;
-  //   }
-  // }
 }

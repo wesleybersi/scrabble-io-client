@@ -1,13 +1,5 @@
 import MainScene from "../../scenes/MainScene";
-import {
-  connectSurroundingWalls,
-  disconnectSurroundingWalls,
-} from "./wall-tiles/detect-surrounding-walls";
-import { adjacentToTileIndex } from "./wall-tiles/detect-surrounding-walls";
-import Cracks from "../cracks";
 import CornerPiece from "../cornerpiece";
-import OilSpill from "../oil";
-// import { detectCornerPiece } from "./wall-tiles/detect-surrounding-walls";
 
 export default class BasicTilemap {
   scene: MainScene;
@@ -16,7 +8,6 @@ export default class BasicTilemap {
   floorTiles!: Phaser.Tilemaps.Tileset;
   wallTiles!: Phaser.Tilemaps.Tileset;
   floor!: Phaser.Tilemaps.TilemapLayer;
-  walls!: Phaser.Tilemaps.TilemapLayer;
   constructor(scene: MainScene) {
     this.scene = scene as MainScene;
     //The map keeping track of all the layers
@@ -51,56 +42,21 @@ export default class BasicTilemap {
       32,
       32
     );
-    const wallLayer = this.wallMap.createBlankLayer(
-      "Wall Layer",
-      this.wallTiles,
-      0,
-      0,
-      scene.colCount,
-      scene.rowCount,
-      32,
-      32
-    );
 
     if (baseLayer) this.floor = baseLayer;
-    if (wallLayer) this.walls = wallLayer;
 
     this.floor.setDepth(0);
-    this.walls.setDepth(5);
 
-    this.placeInitialWalls();
-
-    // Define the size of the rectangle
-    // const rectangleWidth = 40;
-    // const rectangleHeight = 35;
-
-    // Calculate the starting position of the rectangle
-    // const startX = this.scene.player.col - Math.floor(rectangleWidth / 2);
-    // const startY = this.scene.player.row - Math.floor(rectangleHeight / 2);
-
-    // Loop through the tiles and call the placeEmptyFloorTile function
-    // for (let x = startX; x < startX + rectangleWidth; x++) {
-    //   for (let y = startY; y < startY + rectangleHeight; y++) {
-    //     this.placeEmptyFloorTile(x, y);
-    //   }
-    // }
+    this.placeInitialTiles();
   }
 
   placeVoid(col: number, row: number) {
-    disconnectSurroundingWalls(this.walls, row, col);
-    this.walls.removeTileAt(col, row);
-
     const newTile = this.floor.putTileAt(0, col, row);
     newTile.setCollision(false, false, false, false);
     newTile.properties = { name: "Void" };
   }
 
   placeEmptyFloorTile(col: number, row: number) {
-    disconnectSurroundingWalls(this.walls, row, col);
-
-    this.removeWall(col, row);
-
-    // const randomTile = Math.floor(Math.random() * 3);
     const newTile = this.floor.putTileAt(1, col, row);
     newTile.setCollision(false, false, false, false);
     newTile.properties = { name: "Empty" };
@@ -108,11 +64,6 @@ export default class BasicTilemap {
   }
 
   placeIceTile(col: number, row: number) {
-    disconnectSurroundingWalls(this.walls, row, col);
-
-    this.removeWall(col, row);
-
-    // const randomTile = Math.floor(Math.random() * 3);
     const newTile = this.floor.putTileAt(2, col, row);
     newTile.setCollision(false, false, false, false);
     newTile.properties = { name: "Ice" };
@@ -120,11 +71,6 @@ export default class BasicTilemap {
   }
 
   placeLavaTile(col: number, row: number) {
-    disconnectSurroundingWalls(this.walls, row, col);
-
-    this.removeWall(col, row);
-
-    // const randomTile = Math.floor(Math.random() * 3);
     const newTile = this.floor.putTileAt(3, col, row);
     newTile.setCollision(false, false, false, false);
     newTile.properties = { name: "Lava" };
@@ -156,98 +102,9 @@ export default class BasicTilemap {
       );
     }
   }
-  addOil(col: number, row: number) {
-    const { cellHeight, cellWidth } = this.scene;
-    const floorTile = this.floor.getTileAt(col, row);
 
-    if (
-      floorTile &&
-      floorTile.properties.name === "Empty" &&
-      !floorTile.properties.oil
-    ) {
-      floorTile.properties.oil = new OilSpill(
-        this.scene,
-        col * cellWidth + cellWidth / 2,
-        row * cellHeight + cellHeight / 2,
-        row,
-        col
-      );
-    }
-  }
-
-  placeWall(col: number, row: number) {
-    const {
-      top,
-      bottom,
-      left,
-      right,
-      topLeft,
-      topRight,
-      bottomLeft,
-      bottomRight,
-    } = connectSurroundingWalls(this.walls, row, col);
-
-    const tileIndex = adjacentToTileIndex(
-      top,
-      bottom,
-      left,
-      right,
-      topLeft,
-      topRight,
-      bottomLeft,
-      bottomRight
-    );
-
-    this.floor.removeTileAt(col, row);
-
-    const newTile = this.walls.putTileAt(tileIndex, col, row);
-    newTile.setCollision(true, true, true, true);
-    newTile.properties = {
-      name: "Wall",
-      portalable: false,
-      connectedTo: {
-        top,
-        bottom,
-        left,
-        right,
-        topLeft,
-        topRight,
-        bottomLeft,
-        bottomRight,
-      },
-    };
-    newTile.alpha = 0.7;
-  }
-  removeWall(col: number, row: number) {
-    const wall = this.walls.getTileAt(col, row);
-    if (wall) {
-      wall.properties.cracks?.destroy();
-      this.walls.removeTileAt(col, row);
-    }
-  }
-  addWallCracks(col: number, row: number) {
-    const { cellWidth, cellHeight } = this.scene;
-    const wall = this.walls.getTileAt(col, row);
-    if (wall.properties.cracks) return;
-    wall.properties.cracks = new Cracks(
-      this.scene,
-      col * cellWidth + cellWidth / 2,
-      row * cellHeight + cellHeight / 2,
-      row,
-      col
-    );
-  }
-
-  placeInitialWalls() {
-    this.walls.forEachTile((tile) => {
-      // tile.properties.connectedTo = {
-      //   top: true,
-      //   bottom: true,
-      //   left: true,
-      //   right: true,
-      // };
-      // this.placeWall(tile.x, tile.y);
-
+  placeInitialTiles() {
+    this.floor.forEachTile((tile) => {
       this.placeEmptyFloorTile(tile.x, tile.y);
     });
   }

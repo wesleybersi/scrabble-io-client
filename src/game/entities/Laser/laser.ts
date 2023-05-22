@@ -1,6 +1,10 @@
 import MainScene from "../../scenes/MainScene";
 import { Direction, Cardinal } from "../../types";
-import { cardinalToDirection, getOppositeSide } from "../../utils/opposite";
+import {
+  cardinalToDirection,
+  directionToCardinal,
+  getOppositeSide,
+} from "../../utils/opposite";
 import obstructByWall from "./collision/obstruct-by-wall";
 import obstructByCrate from "./collision/obstruct-by-crate";
 import isTouchingPlayer from "./collision/player-collision";
@@ -75,7 +79,7 @@ class Laser extends Phaser.GameObjects.Line {
     if (this.index === 0) {
       //Snap to nearby wall
 
-      const { walls } = this.scene.tilemap;
+      const { allWalls } = this.scene;
       const positions = {
         top: { row: row - 1, col },
         right: { row, col: col + 1 },
@@ -83,14 +87,12 @@ class Laser extends Phaser.GameObjects.Line {
         left: { row, col: col - 1 },
       };
       for (const [side, position] of Object.entries(positions)) {
-        const tile = walls.getTileAt(position.col, position.row);
-        if (tile && tile.properties.name === "Wall") {
-          this.direction = cardinalToDirection(
-            getOppositeSide(side as Cardinal)
-          );
-          this.valid = true;
-          break;
-        }
+        const tile = allWalls.get(`${position.row},${position.col}`);
+        if (!tile) continue;
+
+        this.direction = cardinalToDirection(getOppositeSide(side as Cardinal));
+        this.valid = true;
+        break;
       }
       if (!this.valid) {
         this.remove();
@@ -160,13 +162,17 @@ class Laser extends Phaser.GameObjects.Line {
 
     if (isTouchingPlayer(this)) player.state = "Dead";
 
+    if (this.direction === "left" || this.direction === "right") {
+      this.setDepth(this.row);
+    }
+
     drawLaser(this);
   }
 
   rotate() {
     if (!this.valid) return;
 
-    const { walls } = this.scene.tilemap;
+    const { allWalls } = this.scene;
     const positions = {
       top: { row: this.row - 1, col: this.col },
       right: { row: this.row, col: this.col + 1 },
@@ -174,9 +180,10 @@ class Laser extends Phaser.GameObjects.Line {
       left: { row: this.row, col: this.col - 1 },
     };
     for (const [side, position] of Object.entries(positions)) {
-      const wall = walls.getTileAt(position.col, position.row);
+      const wall = allWalls.get(`${position.col},${position.row}`);
+      if (!wall) continue;
 
-      if (wall && wall.properties.name === "Wall") {
+      if (wall && side !== directionToCardinal(this.direction)) {
         const currentDirection = cardinalToDirection(
           getOppositeSide(side as Cardinal)
         );

@@ -3,6 +3,8 @@ import { Player } from "../entities/Player/player";
 import Portal from "../entities/portal";
 
 import Crate from "../entities/Crate/crate";
+import Wall from "../entities/wall";
+import Ramp from "../entities/ramp";
 
 import Editor from "../entities/editor";
 
@@ -10,10 +12,14 @@ import tilesetFloor from "../assets/images/tilesets/floor.png";
 import tilesetWalls from "../assets/images/tilesets/walls.png";
 
 import spritesheetPlayer from "../assets/images/spritesheets/player-base.png";
-// import spritesheetCrates from "../assets/images/spritesheets/crates.png";
 
-// import spritesheetCrates from "../assets/images/spritesheets/crates-depth.png";
+// import spritesheetCrates from "../assets/images/spritesheets/crates-36.png";
 import spritesheetCrates from "../assets/images/spritesheets/crates-40.png";
+// import spritesheetCrates from "../assets/images/spritesheets/crates-48.png";
+
+import spritesheetHalfWall from "../assets/images/spritesheets/walls-40.png";
+import spritesheetWall from "../assets/images/spritesheets/walls-56.png";
+import spritesheetRamp from "../assets/images/spritesheets/ramp.png";
 
 import spritesheetExplosion from "../assets/images/spritesheets/explosion.png";
 import spritesheetCracks from "../assets/images/spritesheets/wallcrack.png";
@@ -47,12 +53,16 @@ export default class MainScene extends Phaser.Scene {
   colCount = 200;
   cellWidth = 32;
   cellHeight = 24;
+  shadowOffset = { x: 0, y: 16 };
   player!: Player;
   pirates = [];
   gameState: { crates: string } = { crates: "" };
 
   originalStateTracker: { crates: Map<string, Crate> } = { crates: new Map() };
   allCrates: Map<string, Crate> = new Map();
+  allWalls: Map<string, Wall> = new Map();
+  allRamps: Map<string, Ramp> = new Map();
+
   allLasers: Map<string, Laser> = new Map();
   allObjects: Map<string, Crate> = new Map();
   buttons = {
@@ -112,6 +122,19 @@ export default class MainScene extends Phaser.Scene {
     this.load.spritesheet("crates", spritesheetCrates, {
       frameWidth: 32,
       frameHeight: 40,
+    });
+    this.load.spritesheet("ramp", spritesheetRamp, {
+      frameWidth: 64,
+      frameHeight: 40,
+    });
+
+    this.load.spritesheet("half-wall", spritesheetHalfWall, {
+      frameWidth: 32,
+      frameHeight: 40,
+    });
+    this.load.spritesheet("wall", spritesheetWall, {
+      frameWidth: 32,
+      frameHeight: 56,
     });
 
     this.load.spritesheet("player", spritesheetPlayer, {
@@ -286,13 +309,16 @@ export default class MainScene extends Phaser.Scene {
           this.buttons.shift = true;
           break;
         case "r":
-          this.buttons.rotate = !this.buttons.rotate;
+          this.buttons.rotate = true;
           break;
         case "f":
           this.buttons.fill = !this.buttons.fill;
           break;
         case "/":
           this.debugTrigger = true;
+          break;
+        case "c":
+          localStorage.setItem("crates", "");
           break;
         case "=":
           if (this.scale.isFullscreen) {
@@ -316,6 +342,8 @@ export default class MainScene extends Phaser.Scene {
         case "Shift":
           this.buttons.shift = false;
           break;
+        case "r":
+          this.buttons.rotate = false;
       }
       if (this.editor.enabled) {
         this.editor.setScreenBorder();

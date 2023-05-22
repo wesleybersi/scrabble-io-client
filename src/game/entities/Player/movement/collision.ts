@@ -1,8 +1,6 @@
 import { Player } from "../player";
 import Crate from "../../Crate/crate";
 
-import { isColliding } from "../../tilemap/wall-tiles/detect-collision";
-
 import { Direction, Cardinal } from "../../../types";
 import {
   getOppositeSide,
@@ -18,8 +16,16 @@ import redirectTargetToPortal from "../portals/redirectTarget";
 //Function that returns true if player is unable to move.
 //Object interaction is taken care of along the way.
 export function isObstructed(player: Player, direction: Direction) {
-  const { portals, allCrates, rowCount, colCount, tilemap } = player.scene;
-  const { floor, walls } = tilemap;
+  const {
+    portals,
+    allCrates,
+    allWalls,
+    allRamps,
+    rowCount,
+    colCount,
+    tilemap,
+  } = player.scene;
+  const { floor } = tilemap;
   let side = getOppositeSide(directionToCardinal(direction));
   const { row: targetRow, col: targetCol } = directionToAdjacent(
     direction,
@@ -29,11 +35,14 @@ export function isObstructed(player: Player, direction: Direction) {
   const pullDirection = direction;
   if (targetRow < 0 || targetRow >= rowCount) return true; //Out of bounds collision
   if (targetCol < 0 || targetCol >= colCount) return true; //Out of bounds collision
-  // let targetObject = allObjects.get(`${targetRow},${targetCol}`);
+
+  const targetPos = `${targetRow},${targetCol}`;
   let targetFloor = floor.getTileAt(targetCol, targetRow);
-  let targetWall = walls.getTileAt(targetCol, targetRow);
-  let targetCrate = allCrates.get(`${targetRow},${targetCol}`);
-  if (targetCrate && !targetCrate.active) targetCrate = undefined;
+  let targetWall = allWalls.get(targetPos);
+  let targetRamp = allRamps.get(targetPos);
+  let targetCrate = allCrates.get(targetPos)?.active
+    ? allCrates.get(targetPos)
+    : undefined;
 
   //If portals are active, new target?
   if (portals.a && portals.b) {
@@ -48,39 +57,72 @@ export function isObstructed(player: Player, direction: Direction) {
       direction = newDirection;
 
       targetFloor = tilemap.floor.getTileAt(newTarget.col, newTarget.row);
-      targetWall = tilemap.walls.getTileAt(newTarget.col, newTarget.row);
+      targetWall = allWalls.get(`${newTarget.row},${newTarget.col}`);
+      targetRamp = allRamps.get(`${newTarget.row},${newTarget.col}`);
       targetCrate = allCrates.get(`${newTarget.row},${newTarget.col}`);
       if (targetCrate && !targetCrate.active) targetCrate = undefined;
     }
   }
 
-  const currentFloor = tilemap.floor.getTileAt(player.col, player.row);
-  if (currentFloor) {
-    if (currentFloor.properties.oil) {
-      player.moveDuration = player.initialMoveDuration * 3;
-      // player.ease = "Quad.In";
+  //Ramps
+
+  const currentRamp = allRamps.get(`${player.row},${player.col}`);
+
+  if (currentRamp) {
+    if (
+      currentRamp.low.row === player.row &&
+      currentRamp.low.col === player.col
+    ) {
+      if (direction === currentRamp.direction) {
+        player.z = currentRamp.high.zValue;
+      } else if (direction === getOppositeDirection(currentRamp.direction)) {
+        player.z = 0;
+        player.floor = 0;
+      } else return true;
+    } else if (
+      currentRamp.high.row === player.row &&
+      currentRamp.high.col === player.col
+    ) {
+      if (direction === currentRamp.direction) {
+        if (
+          (targetWall && targetWall.wallType === "half-wall") ||
+          targetCrate
+        ) {
+          player.z = 16;
+          player.floor = 1;
+        } else return true;
+      } else if (direction === getOppositeDirection(currentRamp.direction)) {
+        player.z = currentRamp.low.zValue;
+      } else return true;
     }
+    return false;
   }
 
-  //Now we know which targets to work with.
-  // const currentTileObject = player.scene.allObjects.get(
-  //   `${player.row},${player.col}`
-  // );
-
-  // if (currentTileObject && currentTileObject instanceof Remover) {
-  //   if (directionToCardinal(direction) === currentTileObject.placement)
-  //     player.removePortals = true;
-  // }
+  if (targetRamp) {
+    if (targetRamp.low.row === targetRow && targetRamp.low.col === targetCol) {
+      if (direction === targetRamp.direction) player.z = 7;
+      else return true;
+    } else if (
+      targetRamp.high.row === targetRow &&
+      targetRamp.high.col === targetCol &&
+      player.floor > 0
+    ) {
+      if (direction === getOppositeDirection(targetRamp.direction)) {
+        return false;
+      } else return true;
+    } else return true;
+  }
 
   if (targetWall) {
-    console.log(targetWall);
-    if (isColliding(tilemap.walls, direction, targetRow, targetCol))
-      return true;
-  }
-  if (targetFloor) {
-    if (isColliding(tilemap.floor, direction, targetRow, targetCol)) {
-      return true;
+    if (player.z !== targetWall.zValue) {
+      if (targetWall.isColliding(direction)) return true;
     }
+  }
+
+  if (player.floor > 0 && !targetWall && !targetCrate && !targetRamp)
+    return true;
+
+  if (targetFloor) {
     switch (targetFloor.properties.name) {
       case "Void":
         player.state = "Falling";
@@ -177,13 +219,7 @@ export function isObstructed(player: Player, direction: Direction) {
     }
   }
 
-  // if (targetCrate instanceof Remover) {
-  //   if (side === targetObject.placement) player.removePortals = true;
-  // }
-
-  //TODO ABLE TO MOVE HELD OBJECT THROUGH PORTAL
-
-  if (targetCrate && targetCrate.active) {
+  if (targetCrate && targetCrate.active && targetCrate.floor === player.floor) {
     const { allIncluded, abort } = targetCrate.prepareMovement(
       usePullDirection ? pullDirection : direction
     );

@@ -111,14 +111,29 @@ export function moveComplete(crate: Crate) {
     switch (tile.properties.name) {
       case "Void":
         {
+          const { cellWidth, cellHeight } = crate.scene;
           allCrates.delete(`${crate.row},${crate.col}`);
           crate.setDepth(0);
           crate.isFalling = true;
+
+          const mask = crate.scene.add.graphics();
+          // mask.alpha = 0;
+          mask.fillRect(
+            crate.col * cellWidth,
+            crate.row * cellHeight - 16,
+            cellWidth,
+            cellHeight + 16
+          );
+          mask.alpha = 0;
+          crate.setMask(
+            new Phaser.Display.Masks.GeometryMask(crate.scene, mask)
+          );
+
           const tween = crate.scene.tweens.add({
             targets: [crate],
-            scale: 0,
+            y: crate.y + cellHeight * 2,
             duration: 1500,
-            ease: "Quad.Out",
+            ease: "Quad",
 
             onUpdate: () => {
               if (tween.progress > 0.5) {
@@ -130,6 +145,8 @@ export function moveComplete(crate: Crate) {
               crate.update();
               crate.scale = 1;
               crate.isFalling = false;
+              mask.destroy();
+              crate.clearMask();
               return;
             },
           });

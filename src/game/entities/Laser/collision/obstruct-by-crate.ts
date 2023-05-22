@@ -41,10 +41,10 @@ export default function obstructByCrate(laser: Laser, x: number, y: number) {
   if (!laser.scene.editor.enabled && obstructingCrate) {
     obstructingCrate.hp--;
   }
-  if (obstructingCrate) {
-    laser.setDepth(obstructingCrate.row + 1);
-    laser.rose.setDepth(obstructingCrate.row + 1);
-  }
+  // if (obstructingCrate) {
+  //   laser.setDepth(obstructingCrate.row + 1);
+  //   laser.rose.setDepth(obstructingCrate.row + 1);
+  // }
 
   return { endX, endY };
 }

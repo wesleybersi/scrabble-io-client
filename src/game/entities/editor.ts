@@ -6,6 +6,8 @@ import MainScene from "../scenes/MainScene";
 import Laser from "./Laser/laser";
 import Crate from "./Crate/crate";
 import Bubble from "./bubble";
+import Wall from "./wall";
+import Ramp from "./ramp";
 import { getAdjacentTiles } from "../utils/opposite";
 
 class Editor extends Phaser.GameObjects.Graphics {
@@ -22,7 +24,8 @@ class Editor extends Phaser.GameObjects.Graphics {
   selected:
     | "None"
     | "Void"
-    | "Oil"
+    | "Ramp"
+    | "HalfWall"
     | "Wall"
     | "Crate"
     | "Metal Crate"
@@ -42,7 +45,7 @@ class Editor extends Phaser.GameObjects.Graphics {
   camera!: Phaser.Cameras.Scene2D.Camera;
   startPos!: { row: number; col: number } | null;
   lastPlaced: { row: number; col: number };
-  currentRotation: Direction = "up";
+  currentRotation: Direction = "right";
   constructor(
     scene: MainScene,
     camera: Phaser.Cameras.Scene2D.Camera,
@@ -74,13 +77,13 @@ class Editor extends Phaser.GameObjects.Graphics {
           this.selected = "Void";
           break;
         case "1":
-          this.selected = "Wall";
+          this.selected = "HalfWall";
           break;
         case "2":
-          this.selected = "Nuke";
+          this.selected = "Wall";
           break;
         case "3":
-          this.selected = "Oil";
+          this.selected = "Ramp";
           break;
         case "4":
           this.selected = "Crate";
@@ -104,7 +107,12 @@ class Editor extends Phaser.GameObjects.Graphics {
           this.selected = "Lava";
           break;
         case "r":
-          this.selected = "None";
+          if (this.currentRotation === "up") this.currentRotation = "right";
+          else if (this.currentRotation === "right")
+            this.currentRotation = "down";
+          else if (this.currentRotation === "down")
+            this.currentRotation = "left";
+          else if (this.currentRotation === "left") this.currentRotation = "up";
           break;
       }
     });
@@ -121,11 +129,6 @@ class Editor extends Phaser.GameObjects.Graphics {
         const laser = allLasers.get(
           `${this.startPos.row},${this.startPos.col}`
         );
-        const wall = tilemap.walls.getTileAt(hover.col, hover.row);
-        if (wall) {
-          this.startPos = null;
-          return;
-        }
 
         if (laser) {
           if (this.selected !== "None" && this.selected !== "Laser") return;
@@ -194,8 +197,8 @@ class Editor extends Phaser.GameObjects.Graphics {
 
         this.placeSelection(hover.row, hover.col, true);
       } else {
-        const { tilemap, allLasers, allCrates, hover } = this.scene;
-        const { walls, floor } = tilemap;
+        const { tilemap, allLasers, allCrates, allWalls, hover } = this.scene;
+        const { floor } = tilemap;
         //Copying
 
         const crate = allCrates.get(`${hover.row},${hover.col}`);
@@ -204,9 +207,10 @@ class Editor extends Phaser.GameObjects.Graphics {
           return;
         }
 
-        const wall = walls.getTileAt(hover.col, hover.row);
-        if (wall && wall.properties.name === "Wall") {
-          this.selected === "Wall";
+        const wall = allWalls.get(`${hover.row},${hover.col}`);
+        if (wall) {
+          if (wall.wallType === "wall") this.selected = "Wall";
+          else if (wall.wallType === "half-wall") this.selected = "HalfWall";
           return;
         }
 
@@ -233,17 +237,38 @@ class Editor extends Phaser.GameObjects.Graphics {
   placeSelection(row: number, col: number, placeByClicking: boolean) {
     if (!this.enabled) return;
 
-    const { player, allLasers, allCrates, tilemap, cellWidth, cellHeight } =
-      this.scene;
+    const {
+      player,
+      allLasers,
+      allCrates,
+      allWalls,
+      allRamps,
+      tilemap,
+      cellWidth,
+      cellHeight,
+    } = this.scene;
 
-    const { walls, floor } = tilemap;
+    const { floor } = tilemap;
 
     const position = `${row},${col}`;
-    const crate = allCrates.get(`${row},${col}`);
-    const wall = walls.getTileAt(col, row);
+    const crate = allCrates.get(position);
+    const wall = allWalls.get(position);
     const floorTile = floor.getTileAt(col, row);
+    const ramp = allRamps.get(position);
 
     if (this.buttons.meta) {
+      if (wall) {
+        wall.setActive(false);
+        wall.remove();
+        this.scene.events.emit("Walls Updated");
+        return;
+      }
+
+      if (ramp) {
+        ramp.remove();
+        return;
+      }
+
       if (crate) {
         crate.remove();
         return;
@@ -305,9 +330,6 @@ class Editor extends Phaser.GameObjects.Graphics {
       case "Void":
         tilemap.placeVoid(col, row);
         break;
-      case "Oil":
-        tilemap.addOil(col, row);
-        break;
       case "Lava":
         tilemap.placeLavaTile(col, row);
         break;
@@ -322,42 +344,18 @@ class Editor extends Phaser.GameObjects.Graphics {
           "left"
         );
         break;
-      case "Wall":
-        if (wall) {
-          if (!placeByClicking) return;
-          if (!wall.properties.cracks) {
-            tilemap.addWallCracks(col, row);
-          } else {
-            wall.properties.cracks.destroy();
-            delete wall.properties.cracks;
-          }
-        } else {
-          if (floorTile && floorTile.properties.name === "Ice") return;
-          if (crate) return;
-          tilemap.placeWall(col, row);
-        }
+      case "HalfWall":
+        if (!wall) new Wall(this.scene, "half-wall", row, col);
 
         break;
-      case "Nuke":
-        if (wall) return;
-        if (crate && crate instanceof Crate) {
-          if (this.buttons.shift) {
-            crate.connectShape();
-            return;
-          }
-        }
-        if (!crate) {
-          if (player.row === row && player.col === col) return;
-          new Crate(
-            this.scene as MainScene,
-            "Nuke",
-            8,
-            row,
-            col,
-            col * cellWidth,
-            row * cellHeight,
-            this.buttons.shift //Hold CMD to connect blocks
-          );
+      case "Wall":
+        if (!wall) new Wall(this.scene, "wall", row, col);
+        break;
+      case "Ramp":
+        {
+          const { allRamps } = this.scene;
+          if (!allRamps.has(position))
+            new Ramp(this.scene, this.currentRotation, row, col);
         }
         break;
       case "Crate":
@@ -373,7 +371,7 @@ class Editor extends Phaser.GameObjects.Graphics {
           new Crate(
             this.scene as MainScene,
             "Wood",
-            0,
+            { row: 0, col: 0 },
             // 0,
             row,
             col,
@@ -396,7 +394,7 @@ class Editor extends Phaser.GameObjects.Graphics {
           new Crate(
             this.scene as MainScene,
             "Metal",
-            1,
+            { row: 1, col: 0 },
             row,
             col,
             col * cellWidth,
@@ -512,7 +510,7 @@ class Editor extends Phaser.GameObjects.Graphics {
       } else if (type === "Wall") {
         if (!allCrates.has(`${row},${col}`)) {
           if (player.row !== row || player.col !== col) {
-            tilemap.placeWall(col, row);
+            // tilemap.placeWall(col, row);
           }
         }
       }
@@ -543,7 +541,7 @@ class Editor extends Phaser.GameObjects.Graphics {
         } else if (type === "Wall") {
           if (!allCrates.has(pos)) {
             if (player.row !== tile.row || player.col !== tile.col) {
-              tilemap.placeWall(tile.col, tile.row);
+              // tilemap.placeWall(tile.col, tile.row);
             }
           }
         }

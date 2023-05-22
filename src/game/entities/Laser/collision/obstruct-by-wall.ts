@@ -1,4 +1,3 @@
-import { isColliding } from "../../tilemap/wall-tiles/detect-collision";
 import Laser from "../laser";
 
 export default function obstructByWall(laser: Laser): {
@@ -7,11 +6,12 @@ export default function obstructByWall(laser: Laser): {
   endX: number;
   endY: number;
 } {
-  const { cellHeight, cellWidth, tilemap, rowCount, colCount } = laser.scene;
+  const { cellHeight, cellWidth, allWalls, rowCount, colCount } = laser.scene;
   const { col, row, direction } = laser;
 
   const recurseUp = (row: number, col: number): number => {
-    if (isColliding(tilemap.walls, direction, row, col)) {
+    const wall = allWalls.get(`${row},${col}`);
+    if (wall && wall.isColliding(direction)) {
       return row * cellHeight + cellHeight;
     } else if (row > 0) {
       return recurseUp(row - 1, col);
@@ -21,7 +21,8 @@ export default function obstructByWall(laser: Laser): {
   };
 
   const recurseDown = (row: number, col: number): number => {
-    if (isColliding(tilemap.walls, direction, row, col)) {
+    const wall = allWalls.get(`${row},${col}`);
+    if (wall && wall.isColliding(direction)) {
       return row * cellHeight;
     } else if (row <= rowCount) {
       return recurseDown(row + 1, col);
@@ -31,7 +32,8 @@ export default function obstructByWall(laser: Laser): {
   };
 
   const recurseLeft = (row: number, col: number): number => {
-    if (isColliding(tilemap.walls, direction, row, col)) {
+    const wall = allWalls.get(`${row},${col}`);
+    if (wall && wall.isColliding(direction)) {
       return col * cellWidth + cellWidth;
     } else if (col > 0) {
       return recurseLeft(row, col - 1);
@@ -41,7 +43,8 @@ export default function obstructByWall(laser: Laser): {
   };
 
   const recurseRight = (row: number, col: number): number => {
-    if (isColliding(tilemap.walls, direction, row, col)) {
+    const wall = allWalls.get(`${row},${col}`);
+    if (wall && wall.isColliding(direction)) {
       return col * cellWidth;
     } else if (col <= colCount) {
       return recurseRight(row, col + 1);
