@@ -32,7 +32,7 @@ export default function drawLaser(laser: Laser) {
       laser.rails.fillStyle(0x000000);
       laser.rails.fillRect(
         laser.movement === "in"
-          ? laser.origin.col * cellWidth + cellWidth - laser.expanse * cellSize
+          ? laser.origin.col * cellWidth + cellWidth - laser.expanse * cellWidth
           : laser.origin.col * cellWidth,
         laser.direction === "up"
           ? laser.origin.row * cellHeight + cellHeight - 3
@@ -49,7 +49,7 @@ export default function drawLaser(laser: Laser) {
         laser.movement === "in"
           ? laser.origin.row * cellHeight +
               cellHeight -
-              laser.expanse * cellSize
+              laser.expanse * cellHeight
           : laser.origin.row * cellHeight,
         3,
         laser.expanse * cellHeight
