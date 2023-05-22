@@ -18,7 +18,9 @@ import spritesheetCrates from "../assets/images/spritesheets/crates-40.png";
 // import spritesheetCrates from "../assets/images/spritesheets/crates-48.png";
 
 import spritesheetHalfWall from "../assets/images/spritesheets/walls-40.png";
+// import spritesheetWall from "../assets/images/spritesheets/walls-56.png";
 import spritesheetWall from "../assets/images/spritesheets/walls-56.png";
+import spritesheetBigWall from "../assets/images/spritesheets/walls-72.png";
 import spritesheetRamp from "../assets/images/spritesheets/ramp.png";
 
 import spritesheetExplosion from "../assets/images/spritesheets/explosion.png";
@@ -136,6 +138,10 @@ export default class MainScene extends Phaser.Scene {
       frameWidth: 32,
       frameHeight: 56,
     });
+    this.load.spritesheet("big-wall", spritesheetBigWall, {
+      frameWidth: 32,
+      frameHeight: 72,
+    });
 
     this.load.spritesheet("player", spritesheetPlayer, {
       frameWidth: 32,
@@ -209,7 +215,7 @@ export default class MainScene extends Phaser.Scene {
     camera.zoom = this.gameZoomLevel;
 
     // camera.setDeadzone(camera.worldView.width / camera.zoom, camera.worldView.height / camera.zoom);
-    // camera.startFollow(this.player, true, 0.1, 0.1);
+    camera.startFollow(this.player, true, 0.1, 0.1);
     camera.roundPixels = true;
     camera.centerOn(this.player.x, this.player.y);
     this.editor = new Editor(this, camera, this.buttons, this.player);

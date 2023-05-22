@@ -33,8 +33,8 @@ export function isObstructed(player: Player, direction: Direction) {
     player.col
   );
   const pullDirection = direction;
-  if (targetRow < 0 || targetRow >= rowCount) return true; //Out of bounds collision
-  if (targetCol < 0 || targetCol >= colCount) return true; //Out of bounds collision
+  if (targetRow < 0 || targetRow >= rowCount) return true; //Out of bounds
+  if (targetCol < 0 || targetCol >= colCount) return true; //Out of bounds
 
   const targetPos = `${targetRow},${targetCol}`;
   let targetFloor = floor.getTileAt(targetCol, targetRow);
@@ -100,7 +100,7 @@ export function isObstructed(player: Player, direction: Direction) {
 
   if (targetRamp) {
     if (targetRamp.low.row === targetRow && targetRamp.low.col === targetCol) {
-      if (direction === targetRamp.direction) player.z = 7;
+      if (direction === targetRamp.direction) player.z = targetRamp.low.zValue;
       else return true;
     } else if (
       targetRamp.high.row === targetRow &&
@@ -112,6 +112,7 @@ export function isObstructed(player: Player, direction: Direction) {
       } else return true;
     } else return true;
   }
+  //TODO Crate next to targetRamp.low?
 
   if (targetWall) {
     if (player.z !== targetWall.zValue) {

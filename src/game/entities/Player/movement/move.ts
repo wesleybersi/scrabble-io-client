@@ -11,7 +11,7 @@ export default function handleMovement(player: Player) {
   if (player.state !== "Idle" && player.state !== "Holding") {
     return;
   }
-const {events} = player.scene;
+  const { events } = player.scene;
 
   player.portalClone = null;
   player.moveDuration = player.initialMoveDuration;
@@ -42,7 +42,7 @@ const {events} = player.scene;
       } else {
         player.removePortals = false;
         player.forceMovement = Object.assign({}, allDirectionsFalse);
-        player.moving = Object.assign({}, allDirectionsFalse);
+        // player.moving = Object.assign({}, allDirectionsFalse);
         player.portalClone = null;
         if (player.state !== "Dead") player.state = "Idle";
         return;

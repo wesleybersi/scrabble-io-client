@@ -131,7 +131,7 @@ export function moveComplete(crate: Crate) {
 
           const tween = crate.scene.tweens.add({
             targets: [crate],
-            y: crate.y + cellHeight * 2,
+            y: crate.y + cellHeight - 8,
             duration: 1500,
             ease: "Quad",
 
@@ -141,12 +141,12 @@ export function moveComplete(crate: Crate) {
               }
             },
             onComplete: () => {
-              crate.setActive(false);
-              crate.update();
-              crate.scale = 1;
-              crate.isFalling = false;
-              mask.destroy();
-              crate.clearMask();
+              // crate.setActive(false);
+              // crate.update();
+              // crate.scale = 1;
+              // crate.isFalling = false;
+              // mask.destroy();
+              // crate.clearMask();
               return;
             },
           });

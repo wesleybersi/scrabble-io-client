@@ -26,6 +26,7 @@ class Editor extends Phaser.GameObjects.Graphics {
     | "Void"
     | "Ramp"
     | "HalfWall"
+    | "BigWall"
     | "Wall"
     | "Crate"
     | "Metal Crate"
@@ -83,7 +84,7 @@ class Editor extends Phaser.GameObjects.Graphics {
           this.selected = "Wall";
           break;
         case "3":
-          this.selected = "Ramp";
+          this.selected = "BigWall";
           break;
         case "4":
           this.selected = "Crate";
@@ -98,7 +99,7 @@ class Editor extends Phaser.GameObjects.Graphics {
           this.selected = "Ice";
           break;
         case "8":
-          this.selected = "Bubble";
+          this.selected = "Ramp";
           break;
         case "9":
           this.selected = "Laser";
@@ -346,10 +347,23 @@ class Editor extends Phaser.GameObjects.Graphics {
         break;
       case "HalfWall":
         if (!wall) new Wall(this.scene, "half-wall", row, col);
+        else if (wall && wall.wallType === "half-wall") {
+          if (!placeByClicking) return;
+          wall.remove();
+          new Wall(this.scene, "wall", row, col);
+        }
 
         break;
       case "Wall":
         if (!wall) new Wall(this.scene, "wall", row, col);
+        else if (wall && wall.wallType === "wall") {
+          if (!placeByClicking) return;
+          wall.remove();
+          new Wall(this.scene, "big-wall", row, col);
+        }
+        break;
+      case "BigWall":
+        if (!wall) new Wall(this.scene, "big-wall", row, col);
         break;
       case "Ramp":
         {

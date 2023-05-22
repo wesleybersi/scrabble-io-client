@@ -24,12 +24,13 @@ import handleMovement from "./movement/move";
 export class Player extends Phaser.GameObjects.Sprite {
   scene: MainScene;
   shadow!: Phaser.GameObjects.Sprite;
+  shadowMask!: Phaser.GameObjects.Graphics;
   z = 0;
   floor = 0;
   hasReset = false;
   highlight!: Phaser.GameObjects.Graphics;
-  initialMoveDuration = 175;
-  moveDuration = 175;
+  initialMoveDuration = 200;
+  moveDuration = 200;
   moving = { left: false, right: false, up: false, down: false };
   forceMovement = { left: false, right: false, up: false, down: false };
   lastMove: Direction = "up";
@@ -100,6 +101,7 @@ export class Player extends Phaser.GameObjects.Sprite {
       this.y + scene.shadowOffset.y,
       "player"
     );
+    this.shadowMask = this.scene.add.graphics();
     this.highlight = scene.add.graphics();
     this.enableMovement();
     this.setDepth(1);
@@ -111,7 +113,7 @@ export class Player extends Phaser.GameObjects.Sprite {
     scene.add.existing(this);
   }
   generateShadow() {
-    const { shadowOffset } = this.scene;
+    const { shadowOffset, cellWidth, cellHeight, allWalls } = this.scene;
 
     this.shadow.x = this.x + shadowOffset.x;
     this.shadow.y = this.y + shadowOffset.y + 12;
@@ -119,6 +121,23 @@ export class Player extends Phaser.GameObjects.Sprite {
 
     this.shadow.alpha = 0.25;
     this.shadow.setTint(0x000000);
+
+    if (this.z > 0 && !this.wallBelow) {
+      //Remove bottom of shadow when on top of something
+      this.shadowMask.clear();
+      this.shadowMask.fillRect(
+        this.x - cellWidth / 2,
+        this.y,
+        cellWidth,
+        cellHeight
+      );
+      this.shadowMask.alpha = 0;
+      this.shadow.setMask(
+        new Phaser.Display.Masks.GeometryMask(this.scene, this.shadowMask)
+      );
+    } else {
+      this.shadow.clearMask();
+    }
 
     const synchronizeAnimations = () => {
       if (this.anims.currentAnim) {
@@ -340,6 +359,31 @@ export class Player extends Phaser.GameObjects.Sprite {
       });
 
       target.anims.create({
+        key: "sliding-up",
+        frames: [{ key: "player", frame: 0 }],
+        frameRate: 1,
+        repeat: -1,
+      });
+      target.anims.create({
+        key: "sliding-right",
+        frames: [{ key: "player", frame: 3 }],
+        frameRate: 12,
+        repeat: -1,
+      });
+      target.anims.create({
+        key: "sliding-down",
+        frames: [{ key: "player", frame: 6 }],
+        frameRate: 12,
+        repeat: -1,
+      });
+      target.anims.create({
+        key: "sliding-left",
+        frames: [{ key: "player", frame: 9 }],
+        frameRate: 12,
+        repeat: -1,
+      });
+
+      target.anims.create({
         key: "Pushing",
         frames: this.anims.generateFrameNumbers("player", { start: 0, end: 3 }),
         frameRate: 12,
@@ -386,7 +430,7 @@ export class Player extends Phaser.GameObjects.Sprite {
     this.row = this.origin.row;
     this.col = this.origin.col;
     this.x = this.origin.col * cellWidth + cellWidth / 2;
-    this.y = this.origin.row * cellHeight;
+    this.y = this.origin.row * cellHeight + this.z;
     this.holding = Object.assign({}, allCardinalsNull);
     this.moving = Object.assign({}, allDirectionsFalse);
     this.forceMovement = Object.assign({}, allDirectionsFalse);
@@ -399,7 +443,12 @@ export class Player extends Phaser.GameObjects.Sprite {
   update() {
     this.generateShadow();
     this.shadow.setDepth(this.row + this.floor);
-    this.setDepth(this.row + this.floor);
+
+    let additional = 0;
+    if (this.z > 0) additional = 1;
+
+    this.setDepth(this.row + this.floor + additional);
+    this.shadow.setDepth(this.row + this.floor + additional);
 
     const { allWalls } = this.scene;
 
@@ -432,6 +481,7 @@ export class Player extends Phaser.GameObjects.Sprite {
       case "Pulling":
       case "Pushing":
       case "Moving":
+      case "Sliding":
         for (const [direction, moving] of Object.entries(this.moving)) {
           if (moving) {
             let movementDirection = direction;
@@ -439,7 +489,9 @@ export class Player extends Phaser.GameObjects.Sprite {
               movementDirection = getOppositeDirection(direction as Direction);
             }
 
-            const animation = `moving-${movementDirection}`;
+            const action = this.state === "Sliding" ? "sliding" : "moving";
+
+            const animation = `${action}-${movementDirection}`;
             if (this.anims.currentAnim?.key !== animation)
               this.anims.play(animation);
             break;
@@ -447,9 +499,7 @@ export class Player extends Phaser.GameObjects.Sprite {
         }
 
         break;
-      case "Sliding":
-        this.anims.play("Idle");
-        break;
+
       case "Holding":
         this.scene.game.canvas.style.cursor = "grab";
 

@@ -4,7 +4,6 @@ import CornerPiece from "../cornerpiece";
 export default class BasicTilemap {
   scene: MainScene;
   floorMap: Phaser.Tilemaps.Tilemap;
-  wallMap: Phaser.Tilemaps.Tilemap;
   floorTiles!: Phaser.Tilemaps.Tileset;
   wallTiles!: Phaser.Tilemaps.Tileset;
   floor!: Phaser.Tilemaps.TilemapLayer;
@@ -17,19 +16,10 @@ export default class BasicTilemap {
       width: scene.colCount,
       height: scene.rowCount,
     });
-    this.wallMap = scene.make.tilemap({
-      tileWidth: scene.cellWidth,
-      tileHeight: scene.cellHeight,
-      width: scene.colCount,
-      height: scene.rowCount,
-    });
 
     //The tiles in PNG
     const floorTiles = this.floorMap.addTilesetImage("floor-tileset");
     if (floorTiles) this.floorTiles = floorTiles;
-
-    const wallTiles = this.wallMap.addTilesetImage("wall-tileset");
-    if (wallTiles) this.wallTiles = wallTiles;
 
     //Where base tiles like walls and floor tiles are placed
     const baseLayer = this.floorMap.createBlankLayer(

@@ -3,7 +3,7 @@ import { Direction } from "../types";
 
 export default class Wall extends Phaser.GameObjects.Sprite {
   scene: MainScene;
-  wallType: "half-wall" | "wall";
+  wallType: "half-wall" | "wall" | "big-wall";
   shadow!: Phaser.GameObjects.Image;
   topShadow!: Phaser.GameObjects.Image;
   zValue: number;
@@ -21,29 +21,49 @@ export default class Wall extends Phaser.GameObjects.Sprite {
     right: Wall | undefined;
     left: Wall | undefined;
   };
+  connectedTo = {
+    top: false,
+    bottom: false,
+    right: false,
+    left: false,
+  };
   collideDown = true;
   collideUp = true;
   collideLeft = true;
   collideRight = true;
   constructor(
     scene: MainScene,
-    wallType: "half-wall" | "wall",
+    wallType: "half-wall" | "wall" | "big-wall",
     row: number,
     col: number
   ) {
     super(
       scene as MainScene,
       col * scene.cellWidth + scene.cellWidth / 2,
-      wallType === "half-wall"
-        ? row * scene.cellHeight + 4
-        : row * scene.cellHeight - 4,
+      row * scene.cellHeight,
       wallType,
       0
     );
+
+    switch (wallType) {
+      case "half-wall":
+        this.y = row * scene.cellHeight + 4;
+        this.zValue = 16;
+        break;
+      case "wall":
+        this.y = row * scene.cellHeight - 4;
+        this.zValue = 32;
+        break;
+      case "big-wall":
+        this.y = row * scene.cellHeight - 12;
+        this.zValue = 48;
+        break;
+    }
+
     this.scene = scene;
     this.row = row;
     this.col = col;
-    this.zValue = wallType === "half-wall" ? 16 : 32;
+
     this.wallType = wallType;
     this.shadow = this.scene.add.image(
       this.x + scene.shadowOffset.x,
@@ -51,6 +71,7 @@ export default class Wall extends Phaser.GameObjects.Sprite {
       this.wallType
     );
     this.topShadow = this.scene.add.image(this.x, this.y, "half-wall");
+    this.topShadow.alpha = 0;
 
     this.setDepth(row);
     this.setOrigin(0.5, 0.5);
@@ -68,17 +89,42 @@ export default class Wall extends Phaser.GameObjects.Sprite {
   }
 
   generateShadow() {
+    if (this.connectedTo.bottom) {
+      this.shadow.alpha = 0;
+      return;
+    }
     const { shadowOffset, cellHeight } = this.scene;
     this.shadow.x = this.x + shadowOffset.x;
-    this.shadow.y = this.y + shadowOffset.y;
 
-    this.shadow.alpha = 0.2;
+    switch (this.wallType) {
+      case "half-wall":
+        this.shadow.y = this.y + shadowOffset.y;
+        break;
+      case "wall":
+        this.shadow.y = this.y + shadowOffset.y * 2;
+        break;
+      case "big-wall":
+        this.shadow.y = this.y + shadowOffset.y * 3;
+        break;
+    }
+
+    this.shadow.alpha = 0.15;
     this.shadow.setTint(0x000000);
 
     if (
       this.wallType === "half-wall" &&
       this.adjacentWalls.top &&
       this.adjacentWalls.top.wallType === "wall"
+    ) {
+      this.topShadow.alpha = 0.15;
+      this.topShadow.setTint(0x000000);
+      this.topShadow.setDepth(this.row + 1);
+      this.topShadow.scaleY = 0.3334;
+      this.topShadow.y = this.y - cellHeight / 2;
+    } else if (
+      this.wallType === "wall" &&
+      this.adjacentWalls.top &&
+      this.adjacentWalls.top.wallType === "big-wall"
     ) {
       this.topShadow.alpha = 0.15;
       this.topShadow.setTint(0x000000);
@@ -108,19 +154,27 @@ export default class Wall extends Phaser.GameObjects.Sprite {
       left: allWalls.get(`${left.row},${left.col}`),
     };
 
-    const connectedTo = {
+    this.connectedTo = {
       top:
         this.adjacentWalls.top &&
-        this.adjacentWalls.top.wallType === this.wallType,
+        this.adjacentWalls.top.wallType === this.wallType
+          ? true
+          : false,
       bottom:
         this.adjacentWalls.bottom &&
-        this.adjacentWalls.bottom.wallType === this.wallType,
+        this.adjacentWalls.bottom.wallType === this.wallType
+          ? true
+          : false,
       right:
         this.adjacentWalls.right &&
-        this.adjacentWalls.right.wallType === this.wallType,
+        this.adjacentWalls.right.wallType === this.wallType
+          ? true
+          : false,
       left:
         this.adjacentWalls.left &&
-        this.adjacentWalls.left.wallType === this.wallType,
+        this.adjacentWalls.left.wallType === this.wallType
+          ? true
+          : false,
     };
 
     const adjacentToTileIndex = (
@@ -188,16 +242,16 @@ export default class Wall extends Phaser.GameObjects.Sprite {
 
       return 0;
     };
-    if (this.wallType === "half-wall") {
-      this.setFrame(
-        adjacentToTileIndex(
-          connectedTo.top ? true : false,
-          connectedTo.bottom ? true : false,
-          connectedTo.left ? true : false,
-          connectedTo.right ? true : false
-        )
-      );
-    }
+
+    this.setFrame(
+      adjacentToTileIndex(
+        this.connectedTo.top,
+        this.connectedTo.bottom,
+        this.connectedTo.left,
+        this.connectedTo.right
+      )
+    );
+
     this.generateShadow();
   }
   isColliding(direction: Direction): boolean {
