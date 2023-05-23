@@ -6,6 +6,7 @@ export default class Ramp extends Phaser.GameObjects.Sprite {
   shadow!: Phaser.GameObjects.Image;
   row: number;
   col: number;
+  floor: number;
   direction: Direction;
   low!: { row: number; col: number; zValue: number };
   high!: { row: number; col: number; zValue: number };
@@ -14,19 +15,27 @@ export default class Ramp extends Phaser.GameObjects.Sprite {
     scene: MainScene,
     direction: Direction,
     row: number,
-    col: number
+    col: number,
+    floor: number
   ) {
     super(
       scene as MainScene,
-      col * scene.cellWidth + scene.cellWidth,
-      row * scene.cellHeight + 4,
-      "ramp",
-      0
+      direction === "left" || direction === "right"
+        ? col * scene.cellWidth + scene.cellWidth
+        : col * scene.cellWidth + scene.cellWidth / 2,
+      direction === "left" || direction === "right"
+        ? row * scene.cellHeight + 4
+        : row * scene.cellHeight - 8,
+      direction === "left" || direction === "right"
+        ? "ramp-horizontal"
+        : "ramp-vertical",
+      direction === "down" ? 1 : 0
     );
     this.scene = scene;
     this.direction = direction;
     this.row = row;
     this.col = col;
+    this.floor = floor;
     const zValues = { low: 7, high: 14 };
 
     switch (direction) {
@@ -40,29 +49,31 @@ export default class Ramp extends Phaser.GameObjects.Sprite {
         this.high = { row: this.row, col: this.col, zValue: zValues.high };
         break;
       case "up":
-        this.remove();
-        return;
         this.low = { row: this.row, col: this.col, zValue: zValues.low };
         this.high = { row: this.row - 1, col: this.col, zValue: zValues.high };
         break;
       case "down":
-        this.remove();
-        return;
-        this.setScale(1, -1);
         this.low = { row: this.row, col: this.col, zValue: zValues.low };
         this.high = { row: this.row + 1, col: this.col, zValue: zValues.high };
+        this.y += 40;
         break;
       default:
         return;
     }
+    this.setOrigin(0.5, 0.5);
+    this.setDepth(row + floor);
     this.shadow = this.scene.add.image(
       this.x + scene.shadowOffset.x,
       this.y + scene.shadowOffset.y,
-      "ramp"
+      direction === "left" || direction === "right"
+        ? "ramp-horizontal"
+        : "ramp-vertical",
+      direction === "down" ? 1 : 0
     );
+    this.shadow.setDepth(row + floor);
 
-    this.setOrigin(0.5, 0.5);
-    this.setDepth(row);
+    this.y -= floor * scene.floorHeight;
+
     this.generateShadow();
     scene.allRamps.set(`${this.low.row},${this.low.col}`, this);
     scene.allRamps.set(`${this.high.row},${this.high.col}`, this);

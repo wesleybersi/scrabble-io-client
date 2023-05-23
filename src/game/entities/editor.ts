@@ -368,8 +368,11 @@ class Editor extends Phaser.GameObjects.Graphics {
       case "Ramp":
         {
           const { allRamps } = this.scene;
-          if (!allRamps.has(position))
-            new Ramp(this.scene, this.currentRotation, row, col);
+          if (!allRamps.has(position)) {
+            let floor = 0;
+            if (wall && wall.wallType === "half-wall") floor = 1;
+            new Ramp(this.scene, this.currentRotation, row, col, floor);
+          }
         }
         break;
       case "Crate":
@@ -417,28 +420,28 @@ class Editor extends Phaser.GameObjects.Graphics {
           );
         }
         break;
-      case "Explosive":
-        if (wall) return;
-        if (crate && crate instanceof Crate) {
-          if (this.buttons.shift && crate.crateType === "Metal") {
-            crate.connectShape();
-            return;
-          }
-        }
-        if (!crate) {
-          if (player.row === row && player.col === col) return;
-          new Crate(
-            this.scene as MainScene,
-            "Explosive",
-            7,
-            row,
-            col,
-            col * cellWidth,
-            row * cellHeight,
-            this.buttons.shift //Hold CMD to connect blocks
-          );
-        }
-        break;
+      // case "Explosive":
+      //   if (wall) return;
+      //   if (crate && crate instanceof Crate) {
+      //     if (this.buttons.shift && crate.crateType === "Metal") {
+      //       crate.connectShape();
+      //       return;
+      //     }
+      //   }
+      //   if (!crate) {
+      //     if (player.row === row && player.col === col) return;
+      //     new Crate(
+      //       this.scene as MainScene,
+      //       "Explosive",
+      //       7,
+      //       row,
+      //       col,
+      //       col * cellWidth,
+      //       row * cellHeight,
+      //       this.buttons.shift //Hold CMD to connect blocks
+      //     );
+      //   }
+      //   break;
       case "Ice":
         if (wall) return;
         if (floorTile && placeByClicking) {
@@ -508,7 +511,7 @@ class Editor extends Phaser.GameObjects.Graphics {
     area: Set<string> = new Set()
   ): Set<string> {
     const { tilemap, allCrates, player, rowCount, colCount } = this.scene;
-    const { walls, floor } = tilemap;
+    const { floor } = tilemap;
 
     if (row >= rowCount || col >= colCount || row <= 0 || col <= 0) return area;
 
@@ -538,9 +541,9 @@ class Editor extends Phaser.GameObjects.Graphics {
         tile.col <= 0
       )
         return area;
-      const wall = walls.getTileAt(tile.col, tile.row);
-      if (type === "Clear" && !wall) continue;
-      if (type !== "Clear" && wall) continue;
+      // const wall = walls.getTileAt(tile.col, tile.row);
+      // if (type === "Clear" && !wall) continue;
+      // if (type !== "Clear" && wall) continue;
       const pos = `${tile.row},${tile.col}`;
       if (!area.has(pos)) {
         area.add(`${tile.row},${tile.col}`);

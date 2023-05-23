@@ -65,17 +65,18 @@ export function isObstructed(player: Player, direction: Direction) {
   }
 
   //Ramps
-
+  //ANCHOR Currently on ramp
   const currentRamp = allRamps.get(`${player.row},${player.col}`);
-
-  if (currentRamp) {
+  if (currentRamp && currentRamp.floor === player.floor) {
     if (
       currentRamp.low.row === player.row &&
       currentRamp.low.col === player.col
     ) {
       if (direction === currentRamp.direction) {
+        //If moving up the ramp
         player.z = currentRamp.high.zValue;
       } else if (direction === getOppositeDirection(currentRamp.direction)) {
+        //If moving down > off the ramp
         player.z = 0;
         player.floor = 0;
       } else return true;
@@ -88,18 +89,22 @@ export function isObstructed(player: Player, direction: Direction) {
           (targetWall && targetWall.wallType === "half-wall") ||
           targetCrate
         ) {
+          //If moving to next floor
           player.z = 16;
           player.floor = 1;
         } else return true;
       } else if (direction === getOppositeDirection(currentRamp.direction)) {
+        //If moving down the ramp
         player.z = currentRamp.low.zValue;
       } else return true;
     }
     return false;
   }
 
+  //ANCHOR Entering ramp
   if (targetRamp) {
     if (targetRamp.low.row === targetRow && targetRamp.low.col === targetCol) {
+      //If entering ramp from above
       if (direction === targetRamp.direction) player.z = targetRamp.low.zValue;
       else return true;
     } else if (
@@ -107,7 +112,9 @@ export function isObstructed(player: Player, direction: Direction) {
       targetRamp.high.col === targetCol &&
       player.floor > 0
     ) {
+      //If entering ramp from below
       if (direction === getOppositeDirection(targetRamp.direction)) {
+        player.floor = 0;
         return false;
       } else return true;
     } else return true;
@@ -115,7 +122,7 @@ export function isObstructed(player: Player, direction: Direction) {
   //TODO Crate next to targetRamp.low?
 
   if (targetWall) {
-    if (player.z !== targetWall.zValue) {
+    if (targetWall.collidesOn.includes(player.floor)) {
       if (targetWall.isColliding(direction)) return true;
     }
   }

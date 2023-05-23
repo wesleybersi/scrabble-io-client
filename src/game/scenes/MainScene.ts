@@ -21,7 +21,8 @@ import spritesheetHalfWall from "../assets/images/spritesheets/walls-40.png";
 // import spritesheetWall from "../assets/images/spritesheets/walls-56.png";
 import spritesheetWall from "../assets/images/spritesheets/walls-56.png";
 import spritesheetBigWall from "../assets/images/spritesheets/walls-72.png";
-import spritesheetRamp from "../assets/images/spritesheets/ramp.png";
+import imageRampHorizontal from "../assets/images/spritesheets/ramp-h.png";
+import imageRampVertical from "../assets/images/spritesheets/ramp-v.png";
 
 import spritesheetExplosion from "../assets/images/spritesheets/explosion.png";
 import spritesheetCracks from "../assets/images/spritesheets/wallcrack.png";
@@ -55,6 +56,7 @@ export default class MainScene extends Phaser.Scene {
   colCount = 200;
   cellWidth = 32;
   cellHeight = 24;
+  floorHeight = 16;
   shadowOffset = { x: 0, y: 16 };
   player!: Player;
   pirates = [];
@@ -125,9 +127,13 @@ export default class MainScene extends Phaser.Scene {
       frameWidth: 32,
       frameHeight: 40,
     });
-    this.load.spritesheet("ramp", spritesheetRamp, {
+    this.load.spritesheet("ramp-horizontal", imageRampHorizontal, {
       frameWidth: 64,
       frameHeight: 40,
+    });
+    this.load.spritesheet("ramp-vertical", imageRampVertical, {
+      frameWidth: 32,
+      frameHeight: 64,
     });
 
     this.load.spritesheet("half-wall", spritesheetHalfWall, {
@@ -386,14 +392,14 @@ export default class MainScene extends Phaser.Scene {
 
     this.player.update();
 
-    // this.stateText?.destroy();
-    // this.stateText = this.add.text(
-    //   camera.worldView.right - this.cellSize * 2,
-    //   camera.worldView.top + this.cellSize,
-    //   `${this.player.state}`,
-    //   { fontSize: "12px" }
-    // );
-    // this.stateText.setDepth(200);
+    this.stateText?.destroy();
+    this.stateText = this.add.text(
+      camera.worldView.right - this.cellWidth * 2,
+      camera.worldView.top + this.cellHeight,
+      `${this.player.floor}`,
+      { fontSize: "12px" }
+    );
+    this.stateText.setDepth(200);
 
     if (this.debugTrigger) {
       this.debugTrigger = false;

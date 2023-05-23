@@ -31,6 +31,7 @@ export default class Wall extends Phaser.GameObjects.Sprite {
   collideUp = true;
   collideLeft = true;
   collideRight = true;
+  collidesOn = [0];
   constructor(
     scene: MainScene,
     wallType: "half-wall" | "wall" | "big-wall",
@@ -53,10 +54,12 @@ export default class Wall extends Phaser.GameObjects.Sprite {
       case "wall":
         this.y = row * scene.cellHeight - 4;
         this.zValue = 32;
+        this.collidesOn.push(1);
         break;
       case "big-wall":
         this.y = row * scene.cellHeight - 12;
         this.zValue = 48;
+        this.collidesOn.push(1, 2);
         break;
     }
 

@@ -517,6 +517,8 @@ export class Player extends Phaser.GameObjects.Sprite {
         return;
       case "Editing":
         this.resetToOrigin();
+        this.z = 0;
+        this.floor = 0;
         this.forceMovement = Object.assign({}, allDirectionsFalse);
         this.anims.play("Idle");
         this.alpha = 0.65;
