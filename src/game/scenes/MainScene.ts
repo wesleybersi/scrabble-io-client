@@ -18,9 +18,9 @@ import spritesheetCrates from "../assets/images/spritesheets/crates-40.png";
 // import spritesheetCrates from "../assets/images/spritesheets/crates-48.png";
 
 import spritesheetHalfWall from "../assets/images/spritesheets/walls-40.png";
-// import spritesheetWall from "../assets/images/spritesheets/walls-56.png";
 import spritesheetWall from "../assets/images/spritesheets/walls-56.png";
 import spritesheetBigWall from "../assets/images/spritesheets/walls-72.png";
+
 import imageRampHorizontal from "../assets/images/spritesheets/ramp-h.png";
 import imageRampVertical from "../assets/images/spritesheets/ramp-v.png";
 
@@ -31,12 +31,9 @@ import spritesheetOil from "../assets/images/spritesheets/oil.png";
 import imageCornerpiece from "../assets/images/cornerpiece.png";
 import imageEntrance from "../assets/images/entrance.png";
 import imageSpikes from "../assets/images/spikes.png";
-import imageKey from "../assets/images/key.png";
 import imageBubble from "../assets/images/bubble.png";
 
 import cursor from "../assets/images/bigger-cursor.png";
-
-import { randomPosition } from "../utils/opposite";
 
 import Laser from "../entities/Laser/laser";
 import sfxFireBlue from "../assets/audio/fire-blue.wav";
@@ -57,15 +54,22 @@ export default class MainScene extends Phaser.Scene {
   cellWidth = 32;
   cellHeight = 24;
   floorHeight = 16;
+  maxFloor = 8;
   shadowOffset = { x: 0, y: 16 };
   player!: Player;
   pirates = [];
   gameState: { crates: string } = { crates: "" };
 
-  originalStateTracker: { crates: Map<string, Crate> } = { crates: new Map() };
-  allCrates: Map<string, Crate> = new Map();
+  // originalStateTracker: { crates: Array<Map<string, Crate>> };
+  allCrates: Array<Map<string, Crate>> = Array.from(
+    { length: this.maxFloor },
+    () => new Map<string, Crate>()
+  ); //Each index of the array represents a floor.
   allWalls: Map<string, Wall> = new Map();
-  allRamps: Map<string, Ramp> = new Map();
+  allRamps: Array<Map<string, Ramp>> = Array.from(
+    { length: this.maxFloor },
+    () => new Map<string, Ramp>()
+  ); //Each index of the array represents a floor.
 
   allLasers: Map<string, Laser> = new Map();
   allObjects: Map<string, Crate> = new Map();
@@ -77,7 +81,14 @@ export default class MainScene extends Phaser.Scene {
     fill: false,
   };
   prevHover = { row: 0, col: 0 };
-  hover = { row: 0, col: 0, x: 0, y: 0 };
+  hover: {
+    row: number;
+    col: number;
+    floor: number;
+    x: number;
+    y: number;
+    object: Wall | Crate | Ramp | null;
+  } = { row: -1, col: -1, floor: 0, x: -1, y: -1, object: null };
   editor!: Editor;
   portals!: {
     a: Portal | null;
@@ -171,25 +182,25 @@ export default class MainScene extends Phaser.Scene {
   create() {
     //TODO - Full blown local storage function
     //Eventually, we can turn these into JSON files and create levels / arenas
-    const storedCrates = localStorage.getItem("crates");
-    if (storedCrates) {
-      for (const storedCrate of JSON.parse(storedCrates)) {
-        const { crateType, frame, row, col, x, y, connectBlocks } =
-          JSON.parse(storedCrate);
-        const crate = new Crate(
-          this,
-          crateType,
-          frame,
-          row,
-          col,
-          x,
-          y,
-          connectBlocks
-        );
+    // const storedCrates = localStorage.getItem("crates");
+    // if (storedCrates) {
+    //   for (const storedCrate of JSON.parse(storedCrates)) {
+    //     const { crateType, frame, row, col, x, y, connectBlocks } =
+    //       JSON.parse(storedCrate);
+    //     const crate = new Crate(
+    //       this,
+    //       crateType,
+    //       frame,
+    //       row,
+    //       col,
+    //       x,
+    //       y,
+    //       connectBlocks
+    //     );
 
-        this.originalStateTracker.crates.set(`${row},${col}`, crate);
-      }
-    }
+    //     this.originalStateTracker.crates.set(`${row},${col}`, crate);
+    //   }
+    // }
 
     const worldWidth = this.colCount * this.cellWidth;
     const worldHeight = this.rowCount * this.cellHeight;
@@ -221,7 +232,7 @@ export default class MainScene extends Phaser.Scene {
     camera.zoom = this.gameZoomLevel;
 
     // camera.setDeadzone(camera.worldView.width / camera.zoom, camera.worldView.height / camera.zoom);
-    camera.startFollow(this.player, true, 0.1, 0.1);
+    // camera.startFollow(this.player, true, 0.1, 0.1);
     camera.roundPixels = true;
     camera.centerOn(this.player.x, this.player.y);
     this.editor = new Editor(this, camera, this.buttons, this.player);
@@ -242,15 +253,30 @@ export default class MainScene extends Phaser.Scene {
 
     //ANCHOR Mouse events
     this.input.mouse?.disableContextMenu();
+
     this.input.on("pointermove", (pointer: Phaser.Input.Pointer) => {
+      this.hover.x = pointer.worldX;
+      this.hover.y = pointer.worldY;
+      const hoverObj = this.hover.object;
+
+      if (hoverObj instanceof Crate) {
+        const pos = `${hoverObj.row},${hoverObj.col}`;
+        if (!this.allCrates[hoverObj.floor].has(pos)) this.hover.object = null;
+      }
+
+      //If pointing at floortiles
       const row = Math.floor(pointer.worldY / this.cellHeight);
       const col = Math.floor(pointer.worldX / this.cellWidth);
 
       this.hover.row = row;
       this.hover.col = col;
-      this.hover.x = pointer.worldX;
-      this.hover.y = pointer.worldY;
+      this.hover.floor = 0;
     });
+
+    this.events.on("Pointing at", (object: Wall | Crate | Ramp) => {
+      this.hover.object = object;
+    });
+
     this.input.on("pointerup", () => {
       this.buttons.pointerDown = false;
     });
@@ -284,15 +310,20 @@ export default class MainScene extends Phaser.Scene {
             //Make copies
             //TODO Function
 
-            const crateStorage = [];
+            // const crateStorage = [];
 
-            this.originalStateTracker.crates = new Map();
-            for (const [pos, crate] of this.allCrates) {
-              this.originalStateTracker.crates.set(pos, crate);
-              crateStorage.push(crate.stringValue);
-            }
-            this.gameState.crates = JSON.stringify(crateStorage);
-            localStorage.setItem("crates", this.gameState.crates);
+            // this.originalStateTracker.crates = [];
+
+            // for (const floor of this.allCrates){
+            //   this.originalStateTracker.crates.push(floor);
+            //   for (const [pos, crate] of floor) {
+            //     this.originalStateTracker.crates.set(pos, crate);
+            //     crateStorage.push(crate.stringValue);
+            //   }
+            // }
+
+            // this.gameState.crates = JSON.stringify(crateStorage);
+            // localStorage.setItem("crates", this.gameState.crates);
 
             this.editor.disable();
             this.player.state = "Idle";
@@ -305,7 +336,7 @@ export default class MainScene extends Phaser.Scene {
             camera.zoom = this.gameZoomLevel;
           } else if (!this.editor.enabled) {
             //EDIT
-            this.resetAll = true;
+            // this.resetAll = true;
             this.editor.enable();
             this.player.state = "Editing";
             this.scene.launch("Editor-Panel", this);
@@ -379,23 +410,38 @@ export default class MainScene extends Phaser.Scene {
 
     if (this.resetAll) {
       //Returns all crates to their original states, as stored in the startState object
-      this.allCrates = new Map();
-      for (const [pos, crate] of this.originalStateTracker.crates) {
-        const resetPos = `${crate.origin.row},${crate.origin.col}`;
-        this.allCrates.set(resetPos, crate);
-      }
+      //   this.allCrates = [];
+      //   for (const floor of this.originalStateTracker.crates) {
+      //     this.allCrates.push(floor);
+      //   }
+      //   for (const [pos, crate] of this.originalStateTracker.crates) {
+      //     const resetPos = `${crate.origin.row},${crate.origin.col}`;
+      //     this.allCrates.set(resetPos, crate);
+      //   }
+      // }
     }
 
-    for (const [, crate] of this.allCrates) {
-      if (crate) crate.update();
+    for (const floor of this.allCrates) {
+      for (const [, crate] of floor) {
+        if (crate) crate.update();
+      }
     }
 
     this.player.update();
 
     this.stateText?.destroy();
+    // this.stateText = this.add.text(
+    //   camera.worldView.right - this.cellWidth * 10,
+    //   camera.worldView.top + this.cellHeight,
+    //   `Row: ${this.hover.row}, Col:${this.hover.col}, Floor:${
+    //     this.hover.floor
+    //   }${this.hover.object ? `, ${this.hover.object.name}` : ""}`,
+    //   { fontSize: "12px" }
+    // );
+
     this.stateText = this.add.text(
-      camera.worldView.right - this.cellWidth * 2,
-      camera.worldView.top + this.cellHeight,
+      camera.worldView.right - this.cellWidth * 10,
+      camera.worldView.top + this.cellHeight * 2,
       `${this.player.floor}`,
       { fontSize: "12px" }
     );

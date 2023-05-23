@@ -202,11 +202,11 @@ class Editor extends Phaser.GameObjects.Graphics {
         const { floor } = tilemap;
         //Copying
 
-        const crate = allCrates.get(`${hover.row},${hover.col}`);
-        if (crate) {
-          this.selected === "Crate";
-          return;
-        }
+        // const crate = allCrates.get(`${hover.row},${hover.col}`);
+        // if (crate) {
+        //   this.selected === "Crate";
+        //   return;
+        // }
 
         const wall = allWalls.get(`${hover.row},${hover.col}`);
         if (wall) {
@@ -241,39 +241,41 @@ class Editor extends Phaser.GameObjects.Graphics {
     const {
       player,
       allLasers,
-      allCrates,
       allWalls,
       allRamps,
       tilemap,
       cellWidth,
       cellHeight,
+      hover,
     } = this.scene;
 
     const { floor } = tilemap;
 
     const position = `${row},${col}`;
-    const crate = allCrates.get(position);
     const wall = allWalls.get(position);
     const floorTile = floor.getTileAt(col, row);
-    const ramp = allRamps.get(position);
 
     if (this.buttons.meta) {
+      if (hover.object instanceof Crate) hover.object.remove();
+
+      if (hover.object instanceof Ramp) {
+        hover.object.remove();
+        return;
+      }
+
       if (wall) {
         wall.setActive(false);
         wall.remove();
         this.scene.events.emit("Walls Updated");
         return;
       }
-
-      if (ramp) {
-        ramp.remove();
+      if (hover.object instanceof Wall) {
+        hover.object.setActive(false);
+        hover.object.remove();
+        this.scene.events.emit("Walls Updated");
         return;
       }
 
-      if (crate) {
-        crate.remove();
-        return;
-      }
       const laserInPlace = allLasers.get(`${row},${col}`);
       if (laserInPlace) {
         laserInPlace?.remove();
@@ -294,22 +296,6 @@ class Editor extends Phaser.GameObjects.Graphics {
 
     const toggleLaser = () => {
       const laserInPlace = allLasers.get(`${row},${col}`);
-
-      // let oscilate = false;
-      // let movement: "in" | "out" = "out";
-      // let expanse = 0;
-
-      // if (this.buttons.shift) {
-      //   oscilate = true;
-      //   let inout: string | null = null;
-
-      //   expanse = Number(prompt("Expanse:")) - 1;
-      //   inout = prompt("out = right & down, in = left & up");
-
-      //   if (inout === "in" || inout === "out") {
-      //     movement = inout;
-      //   }
-      // }
 
       if (!laserInPlace && placeByClicking) {
         new Laser(
@@ -347,20 +333,11 @@ class Editor extends Phaser.GameObjects.Graphics {
         break;
       case "HalfWall":
         if (!wall) new Wall(this.scene, "half-wall", row, col);
-        else if (wall && wall.wallType === "half-wall") {
-          if (!placeByClicking) return;
-          wall.remove();
-          new Wall(this.scene, "wall", row, col);
-        }
 
         break;
       case "Wall":
         if (!wall) new Wall(this.scene, "wall", row, col);
-        else if (wall && wall.wallType === "wall") {
-          if (!placeByClicking) return;
-          wall.remove();
-          new Wall(this.scene, "big-wall", row, col);
-        }
+
         break;
       case "BigWall":
         if (!wall) new Wall(this.scene, "big-wall", row, col);
@@ -368,54 +345,109 @@ class Editor extends Phaser.GameObjects.Graphics {
       case "Ramp":
         {
           const { allRamps } = this.scene;
-          if (!allRamps.has(position)) {
-            let floor = 0;
-            if (wall && wall.wallType === "half-wall") floor = 1;
-            new Ramp(this.scene, this.currentRotation, row, col, floor);
+
+          let placeRow = row;
+          let placeCol = col;
+          let floorPlacement = 0;
+          if (hover.object instanceof Wall) {
+            floorPlacement = Math.max(...hover.object.collidesOn) + 1;
+            placeRow = hover.object.row;
+            placeCol = hover.object.col;
           }
+          //TODO also check second tile
+          if (allRamps[floorPlacement].has(position)) return;
+
+          new Ramp(
+            this.scene,
+            this.currentRotation,
+            placeRow,
+            placeCol,
+            floorPlacement
+          );
         }
         break;
       case "Crate":
-        if (wall) return;
-        if (crate && crate instanceof Crate) {
-          if (this.buttons.shift) {
-            crate.connectShape();
-            return;
-          }
-        }
-        if (!crate) {
+        {
           if (player.row === row && player.col === col) return;
+          let floorPlacement = 0;
+          let placeRow = row;
+          let placeCol = col;
+          if (hover.object) {
+            if (
+              hover.object instanceof Crate &&
+              hover.object.floor <= this.scene.maxFloor &&
+              !hover.object.adjacentCrates.above
+            ) {
+              floorPlacement += hover.object.floor + 1;
+              placeRow = hover.object.row;
+              placeCol = hover.object.col;
+            }
+            if (hover.object instanceof Wall) {
+              floorPlacement = Math.max(...hover.object.collidesOn) + 1;
+              placeRow = hover.object.row;
+              placeCol = hover.object.col;
+            }
+
+            if (hover.object instanceof Crate) {
+              if (this.buttons.shift) {
+                hover.object.connectShape();
+                return;
+              }
+            }
+          }
+          if (!placeByClicking) return;
           new Crate(
             this.scene as MainScene,
             "Wood",
             { row: 0, col: 0 },
-            // 0,
-            row,
-            col,
-            col * cellWidth,
-            row * cellHeight,
+            placeRow,
+            placeCol,
+            floorPlacement,
+            placeCol * cellWidth,
+            placeRow * cellHeight,
             this.buttons.shift //Hold CMD to connect blocks
           );
         }
         break;
       case "Metal Crate":
-        if (wall) return;
-        if (crate && crate instanceof Crate) {
-          if (this.buttons.shift && crate.crateType === "Metal") {
-            crate.connectShape();
-            return;
-          }
-        }
-        if (!crate) {
+        {
           if (player.row === row && player.col === col) return;
+          let floorPlacement = 0;
+          let placeRow = row;
+          let placeCol = col;
+          if (hover.object) {
+            if (
+              hover.object instanceof Crate &&
+              hover.object.floor <= this.scene.maxFloor &&
+              !hover.object.adjacentCrates.above
+            ) {
+              floorPlacement += hover.object.floor + 1;
+              placeRow = hover.object.row;
+              placeCol = hover.object.col;
+            }
+            if (hover.object instanceof Wall) {
+              floorPlacement = Math.max(...hover.object.collidesOn) + 1;
+              placeRow = hover.object.row;
+              placeCol = hover.object.col;
+            }
+
+            if (hover.object instanceof Crate) {
+              if (this.buttons.shift) {
+                hover.object.connectShape();
+                return;
+              }
+            }
+          }
+          if (!placeByClicking) return;
           new Crate(
             this.scene as MainScene,
             "Metal",
             { row: 1, col: 0 },
-            row,
-            col,
-            col * cellWidth,
-            row * cellHeight,
+            placeRow,
+            placeCol,
+            floorPlacement,
+            placeCol * cellWidth,
+            placeRow * cellHeight,
             this.buttons.shift //Hold CMD to connect blocks
           );
         }

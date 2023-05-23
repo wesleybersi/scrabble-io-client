@@ -39,9 +39,9 @@ export function isObstructed(player: Player, direction: Direction) {
   const targetPos = `${targetRow},${targetCol}`;
   let targetFloor = floor.getTileAt(targetCol, targetRow);
   let targetWall = allWalls.get(targetPos);
-  let targetRamp = allRamps.get(targetPos);
-  let targetCrate = allCrates.get(targetPos)?.active
-    ? allCrates.get(targetPos)
+  let targetRamp = allRamps[player.floor].get(targetPos);
+  let targetCrate = allCrates[player.floor].get(targetPos)?.active
+    ? allCrates[player.floor].get(targetPos)
     : undefined;
 
   //If portals are active, new target?
@@ -58,15 +58,20 @@ export function isObstructed(player: Player, direction: Direction) {
 
       targetFloor = tilemap.floor.getTileAt(newTarget.col, newTarget.row);
       targetWall = allWalls.get(`${newTarget.row},${newTarget.col}`);
-      targetRamp = allRamps.get(`${newTarget.row},${newTarget.col}`);
-      targetCrate = allCrates.get(`${newTarget.row},${newTarget.col}`);
+      targetRamp = allRamps[player.floor].get(
+        `${newTarget.row},${newTarget.col}`
+      );
+      targetCrate = allCrates[player.floor].get(
+        `${newTarget.row},${newTarget.col}`
+      );
       if (targetCrate && !targetCrate.active) targetCrate = undefined;
     }
   }
 
   //Ramps
   //ANCHOR Currently on ramp
-  const currentRamp = allRamps.get(`${player.row},${player.col}`);
+  const currentRamp = allRamps[player.floor].get(`${player.row},${player.col}`);
+  const { floorHeight } = player.scene;
   if (currentRamp && currentRamp.floor === player.floor) {
     if (
       currentRamp.low.row === player.row &&
@@ -77,8 +82,8 @@ export function isObstructed(player: Player, direction: Direction) {
         player.z = currentRamp.high.zValue;
       } else if (direction === getOppositeDirection(currentRamp.direction)) {
         //If moving down > off the ramp
-        player.z = 0;
-        player.floor = 0;
+        // player.floor--;
+        player.z = player.floor * floorHeight;
       } else return true;
     } else if (
       currentRamp.high.row === player.row &&
@@ -86,12 +91,12 @@ export function isObstructed(player: Player, direction: Direction) {
     ) {
       if (direction === currentRamp.direction) {
         if (
-          (targetWall && targetWall.wallType === "half-wall") ||
+          (targetWall && Math.max(...targetWall.collidesOn) === player.floor) ||
           targetCrate
         ) {
           //If moving to next floor
-          player.z = 16;
-          player.floor = 1;
+          player.floor++;
+          player.z = player.floor * floorHeight;
         } else return true;
       } else if (direction === getOppositeDirection(currentRamp.direction)) {
         //If moving down the ramp
@@ -102,9 +107,15 @@ export function isObstructed(player: Player, direction: Direction) {
   }
 
   //ANCHOR Entering ramp
+
+  if (!targetRamp && player.floor > 0) {
+    //If no ramp is found. It will look for a ramp on the floor below.
+    //Which is always the case when going down a ramp
+    targetRamp = allRamps[player.floor - 1].get(targetPos);
+  }
   if (targetRamp) {
     if (targetRamp.low.row === targetRow && targetRamp.low.col === targetCol) {
-      //If entering ramp from above
+      //If entering ramp from below
       if (direction === targetRamp.direction) player.z = targetRamp.low.zValue;
       else return true;
     } else if (
@@ -112,9 +123,10 @@ export function isObstructed(player: Player, direction: Direction) {
       targetRamp.high.col === targetCol &&
       player.floor > 0
     ) {
-      //If entering ramp from below
+      //If entering ramp from above
       if (direction === getOppositeDirection(targetRamp.direction)) {
-        player.floor = 0;
+        //When you enter, floor gets reduced
+        player.floor--;
         return false;
       } else return true;
     } else return true;
@@ -127,10 +139,16 @@ export function isObstructed(player: Player, direction: Direction) {
     }
   }
 
-  if (player.floor > 0 && !targetWall && !targetCrate && !targetRamp)
+  if (player.floor > 0 && !targetWall && !targetCrate && !targetRamp) {
+    //Check floor below
+    const crate = allCrates[player.floor - 1].get(targetPos)?.active
+      ? allCrates[player.floor - 1].get(targetPos)
+      : undefined;
+    if (crate) return false;
     return true;
+  }
 
-  if (targetFloor) {
+  if (player.floor === 0 && targetFloor) {
     switch (targetFloor.properties.name) {
       case "Void":
         player.state = "Falling";
@@ -231,19 +249,6 @@ export function isObstructed(player: Player, direction: Direction) {
     const { allIncluded, abort } = targetCrate.prepareMovement(
       usePullDirection ? pullDirection : direction
     );
-
-    for (const [side, spikes] of Object.entries(targetCrate.extension)) {
-      if (player.state !== "Holding") {
-        if (
-          spikes &&
-          getOppositeDirection(cardinalToDirection(side as Cardinal)) ===
-            direction
-        ) {
-          player.spiked = true;
-          return false;
-        }
-      }
-    }
 
     if (abort) {
       console.log("Aborted");

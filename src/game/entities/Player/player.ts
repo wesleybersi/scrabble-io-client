@@ -8,6 +8,7 @@ import { Cardinal, Direction } from "../../types";
 import {
   cardinalToDirection,
   directionToAngle,
+  directionToCardinal,
   getOppositeDirection,
   getOppositeSide,
 } from "../../utils/opposite";
@@ -74,6 +75,7 @@ export class Player extends Phaser.GameObjects.Sprite {
     bottom: Crate | null;
     left: Crate | null;
   };
+  facing: "up" | "down" | "left" | "right" = "up";
   isSliding = false;
   isOily = false;
   spiked = false;
@@ -198,6 +200,30 @@ export class Player extends Phaser.GameObjects.Sprite {
           this.lastMove = "right";
           this.move();
           break;
+        case "Shift":
+          {
+            if (this.scene.editor.enabled) return;
+
+            const { allCrates } = this.scene;
+
+            for (const [side, adjacent] of Object.entries(this.adjacentTiles)) {
+              const facing = directionToCardinal(this.lastMove);
+              if (facing !== side) continue;
+
+              const crate = allCrates[this.floor].get(
+                `${adjacent.row},${adjacent.col}`
+              );
+              console.log(crate);
+              console.log(crate?.floor);
+              if (crate && crate.floor === this.floor && crate.active) {
+                console.log("Holding succesfully");
+                this.holding[side as Cardinal] = crate;
+                this.state = "Holding";
+                return;
+              }
+            }
+          }
+          break;
       }
     });
     this.scene.input.keyboard?.on("keyup", (event: KeyboardEvent) => {
@@ -206,7 +232,6 @@ export class Player extends Phaser.GameObjects.Sprite {
         case "w":
         case "ArrowUp":
           this.moving.up = false;
-
           break;
         case "A":
         case "a":
@@ -223,95 +248,39 @@ export class Player extends Phaser.GameObjects.Sprite {
         case "ArrowRight":
           this.moving.right = false;
           break;
-      }
-    });
-    this.scene.input.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
-      if (this.scene.editor.enabled) return;
-      this.placePortal(pointer.rightButtonDown() ? "b" : "a");
-
-      // if (pointer.rightButtonDown()) {
-      //   const { allCrates, tilemap } = this.scene;
-      //   const { walls } = tilemap;
-
-      //   console.log(this.angle);
-      //   if (this.angle === 0) {
-      //     const recurseUp = (row: number, col: number) => {
-      //       const pos = `${row},${col}`;
-      //       const crate = allCrates.get(pos);
-      //       const wall = walls.getTileAt(col, row);
-      //       if (wall) return;
-      //       if (crate && crate.active) {
-      //         crate.connectShape("top");
-      //       }
-      //       recurseUp(row - 1, col);
-      //     };
-      //     recurseUp(this.row - 1, this.col);
-      //   }
-      //   if (this.angle === 180) {
-      //     const recurseDown = (row: number, col: number) => {
-      //       const pos = `${row},${col}`;
-      //       const crate = allCrates.get(pos);
-      //       const wall = walls.getTileAt(col, row);
-      //       if (wall) return;
-      //       if (crate && crate.active) {
-      //         crate.connectShape("bottom");
-      //       }
-      //       recurseDown(row + 1, col);
-      //     };
-      //     recurseDown(this.row + 1, this.col);
-      //   }
-      //   if (this.angle === 90) {
-      //     const recurseLeft = (row: number, col: number) => {
-      //       const pos = `${row},${col}`;
-      //       const crate = allCrates.get(pos);
-      //       const wall = walls.getTileAt(col, row);
-      //       if (wall) return;
-      //       if (crate && crate.active) {
-      //         crate.connectShape("right");
-      //       }
-      //       recurseLeft(row, col + 1);
-      //     };
-      //     recurseLeft(this.row, this.col + 1);
-      //   }
-      //   if (this.angle === -90) {
-      //     const recurseLeft = (row: number, col: number) => {
-      //       const pos = `${row},${col}`;
-      //       const crate = allCrates.get(pos);
-      //       const wall = walls.getTileAt(col, row);
-      //       if (wall) return;
-      //       if (crate && crate.active) {
-      //         crate.connectShape("left");
-      //       }
-      //       recurseLeft(row, col - 1);
-      //     };
-      //     recurseLeft(this.row, this.col - 1);
-      //   }
-
-      // return;
-      // }
-
-      const { hover, allCrates } = this.scene;
-
-      for (const [side, adjacent] of Object.entries(this.adjacentTiles)) {
-        if (adjacent.row === hover.row && adjacent.col === hover.col) {
-          const crate = allCrates.get(`${hover.row},${hover.col}`);
-          if (crate && crate.active) {
-            const oppositeSide = getOppositeSide(side as Cardinal);
-            if (crate.extension[oppositeSide]) return;
-
-            this.holding[side as Cardinal] = crate;
-            this.state = "Holding";
-            return;
+        case "Shift":
+          console.log("NOT HOLDINg");
+          if (this.state === "Holding") {
+            this.state = "Idle";
           }
-        }
+          this.holding = Object.assign({}, allCardinalsNull);
+          break;
       }
     });
-    this.scene.input.on("pointerup", (pointer: Phaser.Input.Pointer) => {
-      if (this.state === "Holding") {
-        this.state = "Idle";
-      }
-      this.holding = Object.assign({}, allCardinalsNull);
-    });
+    //   this.scene.input.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
+    //     if (this.scene.editor.enabled) return;
+    //     // this.placePortal(pointer.rightButtonDown() ? "b" : "a");
+
+    //     const { hover, allCrates } = this.scene;
+
+    //     for (const [side, adjacent] of Object.entries(this.adjacentTiles)) {
+    //       if (adjacent.row === hover.row && adjacent.col === hover.col) {
+    //         const crate = allCrates[this.floor].get(`${hover.row},${hover.col}`);
+    //         if (crate && crate.floor === this.floor && crate.active) {
+    //           this.holding[side as Cardinal] = crate;
+    //           this.state = "Holding";
+    //           return;
+    //         }
+    //       }
+    //     }
+    //   });
+    //   this.scene.input.on("pointerup", (pointer: Phaser.Input.Pointer) => {
+    //     if (this.state === "Holding") {
+    //       this.state = "Idle";
+    //     }
+    //     this.holding = Object.assign({}, allCardinalsNull);
+    //   });
+    // }
   }
 
   createAnimations() {
@@ -442,7 +411,6 @@ export class Player extends Phaser.GameObjects.Sprite {
 
   update() {
     this.generateShadow();
-    this.shadow.setDepth(this.row + this.floor);
 
     let additional = 0;
     if (this.z > 0) additional = 1;

@@ -1,4 +1,9 @@
+import { connected } from "process";
 import Crate from "../crate";
+import {
+  directionToCardinal,
+  getOppositeDirection,
+} from "../../../utils/opposite";
 
 export default function makeMove(
   crate: Crate,
@@ -11,7 +16,7 @@ export default function makeMove(
   crate.isMoving = true;
   crate.direction = direction;
 
-  const { portals, allCrates, cellWidth, cellHeight, resetAll } = crate.scene;
+  const { allCrates, cellWidth, cellHeight } = crate.scene;
   crate.target = { row: crate.row, col: crate.col, x: crate.x, y: crate.y };
 
   if (direction === "up") {
@@ -68,8 +73,8 @@ export default function makeMove(
       //   }
 
       const oldPos = `${crate.row},${crate.col}`;
-      if (allCrates.get(oldPos) === crate) {
-        allCrates.delete(oldPos);
+      if (allCrates[crate.floor].get(oldPos) === crate) {
+        allCrates[crate.floor].delete(oldPos);
       }
 
       let newPos = "";
@@ -78,7 +83,7 @@ export default function makeMove(
       } else if (crate.target) {
         newPos = `${crate.target.row},${crate.target.col}`;
       }
-      allCrates.set(newPos, crate);
+      allCrates[crate.floor].set(newPos, crate);
       completed.add(crate);
       //Last one to complete takes care of everyone else
       if (completed.size === allIncluded.size) {
@@ -91,7 +96,7 @@ export default function makeMove(
 }
 
 export function moveComplete(crate: Crate) {
-  const { allCrates } = crate.scene;
+  const { allCrates, allWalls } = crate.scene;
   const { floor } = crate.scene.tilemap;
 
   if (crate.target) {
@@ -103,16 +108,57 @@ export function moveComplete(crate: Crate) {
     crate.update();
   }
   crate.target = null;
+  console.log(allCrates);
 
-  crate.setDepth(0);
+  const ease = crate.floor > 1 ? "Linear" : "Quad";
+  function fallingCrate() {
+    if (crate.floor > 0) {
+      const oppositeSide = directionToCardinal(
+        getOppositeDirection(crate.direction)
+      );
 
+      //TODO If not all of shape, none of shape
+      if (crate.connectedTo[oppositeSide]) return;
+
+      const wall = allWalls.get(`${crate.row},${crate.col}`);
+      const otherCrate = allCrates[crate.floor - 1].get(
+        `${crate.row},${crate.col}`
+      );
+      if (!wall && !otherCrate) {
+        const { cellHeight } = crate.scene;
+        allCrates[crate.floor].delete(`${crate.row},${crate.col}`);
+        crate.isFalling = true;
+
+        const tween = crate.scene.tweens.add({
+          targets: [crate],
+          y: crate.y + cellHeight - 8,
+          duration: 250 / crate.weight,
+          ease,
+          onStart: () => {
+            crate.shadow.y += crate.scene.floorHeight;
+          },
+          onComplete: () => {
+            crate.floor--;
+            allCrates[crate.floor].set(`${crate.row},${crate.col}`, crate);
+            crate.update();
+
+            fallingCrate();
+            crate.isFalling = false;
+            return;
+          },
+        });
+      }
+    }
+    return;
+  }
+  fallingCrate();
   const tile = floor.getTileAt(crate.col, crate.row);
   if (tile) {
     switch (tile.properties.name) {
       case "Void":
         {
           const { cellWidth, cellHeight } = crate.scene;
-          allCrates.delete(`${crate.row},${crate.col}`);
+          allCrates[crate.floor].delete(`${crate.row},${crate.col}`);
           crate.setDepth(0);
           crate.isFalling = true;
 
@@ -187,7 +233,7 @@ export function moveComplete(crate: Crate) {
         if (crate.crateType === "Explosive") {
           crate.explode();
         } else if (crate.crateType === "Wood") {
-          allCrates.delete(`${crate.row},${crate.col}`);
+          allCrates[crate.floor].delete(`${crate.row},${crate.col}`);
           crate.setDepth(0);
           crate.isFalling = true;
           const tween = crate.scene.tweens.add({

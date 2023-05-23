@@ -9,6 +9,7 @@ export default class Wall extends Phaser.GameObjects.Sprite {
   zValue: number;
   row: number;
   col: number;
+  floor: number;
   adjacent!: {
     top: { row: number; col: number };
     bottom: { row: number; col: number };
@@ -64,9 +65,10 @@ export default class Wall extends Phaser.GameObjects.Sprite {
     }
 
     this.scene = scene;
+    this.name = wallType;
     this.row = row;
     this.col = col;
-
+    this.floor = 0;
     this.wallType = wallType;
     this.shadow = this.scene.add.image(
       this.x + scene.shadowOffset.x,
@@ -78,6 +80,18 @@ export default class Wall extends Phaser.GameObjects.Sprite {
 
     this.setDepth(row);
     this.setOrigin(0.5, 0.5);
+
+    //ANCHOR HOVER events
+    this.setInteractive();
+    this.on("pointerover", () => {
+      this.scene.events.emit("Pointing at", this);
+    });
+    this.on("pointerout", () => {
+      if (this.scene.hover.object === this) {
+        this.scene.hover.object = null;
+      }
+    });
+
     this.update();
     scene.allWalls.set(`${row},${col}`, this);
 
@@ -266,13 +280,21 @@ export default class Wall extends Phaser.GameObjects.Sprite {
   }
   remove() {
     //Can only be removed in editor
-    const { allWalls } = this.scene;
+    if (!this.scene) return;
+    const { allWalls, allCrates } = this.scene;
 
     for (const [pos, wall] of allWalls) {
       if (wall === this) {
         allWalls.delete(pos);
       }
     }
+
+    allCrates.forEach((floor, index) => {
+      if (index >= this.floor) {
+        const crate = floor.get(`${this.row},${this.col}`);
+        crate?.remove();
+      }
+    });
 
     this.shadow.destroy();
     this.topShadow.destroy();

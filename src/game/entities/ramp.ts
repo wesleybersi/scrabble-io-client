@@ -32,11 +32,15 @@ export default class Ramp extends Phaser.GameObjects.Sprite {
       direction === "down" ? 1 : 0
     );
     this.scene = scene;
+    this.name = "Ramp";
     this.direction = direction;
     this.row = row;
     this.col = col;
     this.floor = floor;
-    const zValues = { low: 7, high: 14 };
+    const zValues = {
+      low: 7 + this.floor * scene.floorHeight,
+      high: 14 + this.floor * scene.floorHeight,
+    };
 
     switch (direction) {
       case "right":
@@ -74,9 +78,20 @@ export default class Ramp extends Phaser.GameObjects.Sprite {
 
     this.y -= floor * scene.floorHeight;
 
+    //ANCHOR HOVER events
+    this.setInteractive();
+    this.on("pointerover", () => {
+      scene.events.emit("Pointing at", this);
+    });
+    this.on("pointerout", () => {
+      if (this.scene.hover.object === this) {
+        scene.hover.object = null;
+      }
+    });
+
     this.generateShadow();
-    scene.allRamps.set(`${this.low.row},${this.low.col}`, this);
-    scene.allRamps.set(`${this.high.row},${this.high.col}`, this);
+    scene.allRamps[this.floor].set(`${this.low.row},${this.low.col}`, this);
+    scene.allRamps[this.floor].set(`${this.high.row},${this.high.col}`, this);
 
     this.scene.add.existing(this);
   }
@@ -89,13 +104,16 @@ export default class Ramp extends Phaser.GameObjects.Sprite {
     this.shadow.setTint(0x000000);
   }
   remove() {
+    if (!this.scene) return;
     const { allRamps } = this.scene;
     let removeCount = 0;
-    for (const [pos, ramp] of allRamps) {
-      if (removeCount === 2) break;
-      if (ramp !== this) continue;
-      else allRamps.delete(pos);
-      removeCount++;
+    for (const floor of allRamps) {
+      for (const [pos, ramp] of floor) {
+        if (removeCount === 2) break;
+        if (ramp !== this) continue;
+        else floor.delete(pos);
+        removeCount++;
+      }
     }
 
     this.shadow.destroy();

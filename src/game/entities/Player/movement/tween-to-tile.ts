@@ -61,13 +61,10 @@ export default function tweenToTile(player: Player, col: number, row: number) {
       player.row = Math.floor(player.y + player.z) / cellHeight;
       player.col = Math.floor(player.x - cellWidth / 2) / cellWidth;
 
-      if (
-        player.state === "Pulling" ||
-        (player.state === "Pushing" && buttons.pointerDown)
-      ) {
+      if (player.state === "Pulling" || player.state === "Pushing") {
         let stillHolding = false;
         for (const [side, hold] of Object.entries(player.holding)) {
-          if (hold && buttons.pointerDown) {
+          if (hold) {
             player.state = "Holding";
             stillHolding = true;
             break;

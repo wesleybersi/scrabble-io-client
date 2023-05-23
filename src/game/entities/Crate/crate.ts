@@ -6,7 +6,6 @@ import prepareMovement from "./movement/prepare-movement";
 import makeMove from "./movement/make-move";
 import Laser from "../Laser/laser";
 import Explosion from "../explosion";
-import Spikes from "../spikes";
 
 class Crate extends Phaser.GameObjects.Sprite {
   scene: MainScene;
@@ -20,12 +19,6 @@ class Crate extends Phaser.GameObjects.Sprite {
   isFalling = false;
   crateType!: "Wood" | "Metal" | "Deflector" | "Explosive" | "Nuke" | "Key";
   item: "Key" | "None" = "None";
-  extension: {
-    top: Spikes | null;
-    right: Spikes | null;
-    bottom: Spikes | null;
-    left: Spikes | null;
-  } = { top: null, right: null, bottom: null, left: null };
   direction!: Direction;
   weight = 1;
   row!: number;
@@ -44,12 +37,16 @@ class Crate extends Phaser.GameObjects.Sprite {
     bottom: Crate | undefined;
     left: Crate | undefined;
     right: Crate | undefined;
+    above?: Crate | undefined;
+    below?: Crate | undefined;
   };
   connectedTo!: {
     top: Crate | undefined;
     bottom: Crate | undefined;
     left: Crate | undefined;
     right: Crate | undefined;
+    above?: Crate | undefined;
+    below?: Crate | undefined;
   };
   autoConnect = {
     top: false,
@@ -74,6 +71,7 @@ class Crate extends Phaser.GameObjects.Sprite {
     frame: { row: number; col: number },
     row: number,
     col: number,
+    floor: number,
     x: number,
     y: number,
     connectBlocks: boolean
@@ -81,17 +79,18 @@ class Crate extends Phaser.GameObjects.Sprite {
     super(scene as MainScene, x, y, "crates", frame.row * 5 + frame.col);
     this.scene = scene;
     this.setOrigin(0.5, 0.5);
-    this.name = "Crate";
+    this.name = crateType;
     this.crateType = crateType;
     this.row = row;
     this.col = col;
+    this.floor = floor;
     this.origin = {
       row,
       col,
       x: x + scene.cellWidth / 2,
-      y: y + 4,
+      y: y + 4 - this.floor * scene.floorHeight,
     };
-    this.y = y + 4;
+    this.y = y + 4 - this.floor * scene.floorHeight;
     this.x = x + scene.cellWidth / 2;
     this.shadow = scene.add.sprite(
       this.x + scene.shadowOffset.x,
@@ -101,12 +100,25 @@ class Crate extends Phaser.GameObjects.Sprite {
     this.setHP();
     this.connectedTo = Object.assign({}, allCardinalsUndefined);
     this.adjacentCrates = Object.assign({}, allCardinalsUndefined);
-    this.setSpikes();
+
     this.setDepth(1);
     this.generateShadow();
 
+    //TODO One big shadow, depending on verticality of shape
+
+    //ANCHOR HOVER events
+    this.setInteractive();
+    this.on("pointerover", () => {
+      this.scene.events.emit("Pointing at", this);
+    });
+    this.on("pointerout", () => {
+      if (this.scene.hover.object === this) {
+        this.scene.hover.object = null;
+      }
+    });
+
     const { allCrates } = this.scene;
-    allCrates.set(`${row},${col}`, this);
+    allCrates[this.floor].set(`${row},${col}`, this);
 
     if (connectBlocks) {
       this.connectShape();
@@ -133,7 +145,9 @@ class Crate extends Phaser.GameObjects.Sprite {
       "row:",
       this.row,
       "col:",
-      this.col
+      this.col,
+      "floor:",
+      this.floor
     );
   }
   generateShadow() {
@@ -145,56 +159,6 @@ class Crate extends Phaser.GameObjects.Sprite {
     this.shadow.setTint(0x000000);
   }
 
-  setSpikes() {
-    return;
-    const spikes = {
-      top: Math.floor(Math.random() * 50) === 1,
-      bottom: Math.floor(Math.random() * 50) === 1,
-      left: Math.floor(Math.random() * 50) === 1,
-      right: Math.floor(Math.random() * 50) === 1,
-    };
-
-    if (spikes.top) {
-      this.extension.top = new Spikes(
-        this.scene,
-        this.x,
-        this.y,
-        this.row,
-        this.col,
-        "up"
-      );
-    }
-    if (spikes.bottom) {
-      this.extension.bottom = new Spikes(
-        this.scene,
-        this.x,
-        this.y,
-        this.row,
-        this.col,
-        "down"
-      );
-    }
-    if (spikes.left) {
-      this.extension.left = new Spikes(
-        this.scene,
-        this.x,
-        this.y,
-        this.row,
-        this.col,
-        "left"
-      );
-    }
-    if (spikes.right) {
-      this.extension.right = new Spikes(
-        this.scene,
-        this.x,
-        this.y,
-        this.row,
-        this.col,
-        "right"
-      );
-    }
-  }
   setHP(): void {
     switch (this.crateType) {
       case "Wood":
@@ -262,10 +226,6 @@ class Crate extends Phaser.GameObjects.Sprite {
   update() {
     const { allCrates, resetAll, player } = this.scene;
 
-    // if (this.col === player.col && this.row - player.row === 1)
-    //   this.alpha = 0.8;
-    // else this.alpha = 1;
-
     if (resetAll) {
       //TODO - Method that resets to original state. Or remembers it at the start.
       //Reset crate to original state
@@ -282,22 +242,13 @@ class Crate extends Phaser.GameObjects.Sprite {
 
     if (!this.active) {
       this.alpha = 0;
-      for (const [side, spikes] of Object.entries(this.extension)) {
-        if (spikes) {
-          spikes.alpha = 0;
-        }
-      }
-      return;
-    } else {
-      for (const [side, spikes] of Object.entries(this.extension)) {
-        if (spikes) {
-          spikes.update(this.x, this.y);
-        }
-      }
-    }
-    this.setDepth(this.row);
 
+      return;
+    }
+    this.shadow.setDepth(this.row + this.floor);
     this.generateShadow();
+    this.setDepth(this.row + this.floor);
+
     if (this.isMoving) return;
 
     if (this.hp <= 0) {
@@ -320,10 +271,14 @@ class Crate extends Phaser.GameObjects.Sprite {
     const { top, bottom, right, left } = this.adjacent;
 
     this.adjacentCrates = {
-      top: allCrates.get(`${top.row},${top.col}`),
-      bottom: allCrates.get(`${bottom.row},${bottom.col}`),
-      right: allCrates.get(`${right.row},${right.col}`),
-      left: allCrates.get(`${left.row},${left.col}`),
+      top: allCrates[this.floor].get(`${top.row},${top.col}`),
+      bottom: allCrates[this.floor].get(`${bottom.row},${bottom.col}`),
+      right: allCrates[this.floor].get(`${right.row},${right.col}`),
+      left: allCrates[this.floor].get(`${left.row},${left.col}`),
+      above: allCrates[this.floor + 1].get(`${this.row},${this.col}`),
+      below: allCrates[this.floor - 1]
+        ? allCrates[this.floor - 1].get(`${this.row},${this.col}`)
+        : undefined,
     };
     for (const [side, crate] of Object.entries(this.adjacentCrates)) {
       if (this.connectedTo[side as Cardinal] && !crate) {
@@ -378,6 +333,9 @@ class Crate extends Phaser.GameObjects.Sprite {
 
   remove() {
     //Can only be removed in editor
+
+    if (!this.scene) return;
+
     const { allCrates, portals } = this.scene;
     for (const [type, portal] of Object.entries(portals)) {
       if (!portal) continue;
@@ -386,15 +344,9 @@ class Crate extends Phaser.GameObjects.Sprite {
       }
     }
 
-    for (const [side, spikes] of Object.entries(this.extension)) {
-      if (spikes) {
-        spikes.destroy();
-      }
-    }
-
-    for (const [pos, crate] of allCrates) {
+    for (const [pos, crate] of allCrates[this.floor]) {
       if (crate === this) {
-        allCrates.delete(pos);
+        allCrates[this.floor].delete(pos);
       }
     }
 
@@ -406,6 +358,8 @@ class Crate extends Phaser.GameObjects.Sprite {
     for (const crate of shape) {
       crate.connectShape();
     }
+
+    if (this.adjacentCrates.above) this.adjacentCrates.above.remove();
 
     this.shadow.destroy();
     this.destroy();

@@ -15,7 +15,7 @@ export default function prepareMovement(
   abort: boolean;
   enteringPortal?: Crate;
 } {
-  const { allWalls, allRamps } = crate.scene;
+  const { allWalls, allRamps, allCrates } = crate.scene;
 
   let aborted = false;
   const { row: targetRow, col: targetCol } = directionToAdjacent(
@@ -25,24 +25,30 @@ export default function prepareMovement(
   );
   const position = `${targetRow},${targetCol}`;
   const targetWall = allWalls.get(position);
-  const targetRamp = allRamps.get(position);
 
   movingSet.add(crate);
   visitedSet.add(crate);
 
-  if (targetWall && targetWall.isColliding(direction)) {
+  if (
+    targetWall &&
+    targetWall.collidesOn.includes(crate.floor) &&
+    targetWall.isColliding(direction)
+  ) {
     aborted = true;
   }
-  if (targetRamp) aborted = true;
 
   for (const [side, adjacentCrate] of Object.entries(crate.adjacentCrates)) {
     if (aborted) break;
-    if (!adjacentCrate || !adjacentCrate.active || adjacentCrate.isFalling)
-      continue;
+    if (!adjacentCrate || !adjacentCrate.active) continue;
+    if (adjacentCrate.isFalling) {
+      aborted = true;
+      break;
+    }
 
     if (
       !crate.connectedTo[side as Cardinal] &&
-      directionToCardinal(direction as Direction) !== side
+      directionToCardinal(direction as Direction) !== side &&
+      side !== "above"
     )
       continue;
 
