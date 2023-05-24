@@ -36,8 +36,6 @@ import imageEntrance from "../assets/images/entrance.png";
 import imageSpikes from "../assets/images/spikes.png";
 import imageBubble from "../assets/images/bubble.png";
 
-import cursor from "../assets/images/bigger-cursor-2.png";
-
 import Laser from "../entities/Laser/laser";
 import sfxFireBlue from "../assets/audio/fire-blue.wav";
 import sfxFireOrange from "../assets/audio/fire-orange.wav";
@@ -131,11 +129,6 @@ export default class MainScene extends Phaser.Scene {
     this.load.image("spikes", imageSpikes);
     this.load.image("bubble", imageBubble);
 
-    this.load.spritesheet("cursor", cursor, {
-      frameWidth: 38,
-      frameHeight: 30,
-    });
-
     //Tilesets
     this.load.spritesheet("floor-tileset", tilesetFloor, {
       frameWidth: cellWidth,
@@ -218,15 +211,6 @@ export default class MainScene extends Phaser.Scene {
 
     const worldWidth = this.colCount * this.cellWidth;
     const worldHeight = this.rowCount * this.cellHeight;
-
-    // this.cursor = new Cursor(
-    //   this,
-    //   this.hover.col * this.cellWidth + this.cellWidth / 2,
-    //   this.hover.row * this.cellHeight + this.cellHeight / 2,
-    //   this.hover.row,
-    //   this.hover.col
-    // );
-    // this.game.canvas.style.cursor = "none";
 
     //Audio
     this.sound.add("portal-a");
@@ -343,7 +327,6 @@ export default class MainScene extends Phaser.Scene {
             this.player.state = "Idle";
             this.sound.play("edit-mode");
             this.scene.stop("Editor-Panel");
-            this.cursor.setVisible(false);
             this.buttons.meta = false;
             this.buttons.shift = false;
             this.buttons.fill = false;
@@ -355,8 +338,6 @@ export default class MainScene extends Phaser.Scene {
             this.player.state = "Editing";
             this.scene.launch("Editor-Panel", this);
             this.sound.play("edit-mode");
-            this.cursor.setVisible(true);
-            // this.cursor.update();
           }
           break;
         case "Meta":
@@ -416,13 +397,13 @@ export default class MainScene extends Phaser.Scene {
       this.frameCounter = 0;
     }
 
-    if (this.frameCounter % 20 === 0) {
-      this.allWaterFlows.forEach((floor) => {
-        for (const [pos, flow] of floor) {
-          flow.update();
-        }
-      });
-    }
+    // if (this.frameCounter % 20 === 0) {
+    this.allWaterFlows.forEach((floor) => {
+      for (const [pos, flow] of floor) {
+        flow.update();
+      }
+    });
+    // }
 
     for (const [, laser] of this.allLasers) {
       if (laser && laser.valid) laser.update();
@@ -461,11 +442,12 @@ export default class MainScene extends Phaser.Scene {
 
     this.stateText = this.add.text(
       camera.worldView.right - this.cellWidth * 10,
-      camera.worldView.top + this.cellHeight * 2,
-      `${this.player.floor}`,
+      camera.worldView.top + this.cellHeight,
+      `Row: ${this.hover.row}, Col:${this.hover.col}, Floor:${
+        this.hover.floor
+      }${this.hover.object ? `, ${this.hover.object.name}` : ""}`,
       { fontSize: "12px" }
     );
-    this.stateText.setDepth(200);
 
     if (this.debugTrigger) {
       this.debugTrigger = false;

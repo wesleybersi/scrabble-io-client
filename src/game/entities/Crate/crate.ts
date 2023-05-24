@@ -117,8 +117,9 @@ class Crate extends Phaser.GameObjects.Sprite {
       }
     });
 
+    console.log("Row:", row, "Col:", col, "Floor", floor);
     const { allCrates } = this.scene;
-    allCrates[this.floor].set(`${row},${col}`, this);
+    allCrates[floor].set(`${row},${col}`, this);
 
     if (connectBlocks) {
       this.connectShape();

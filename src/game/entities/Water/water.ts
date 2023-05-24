@@ -8,6 +8,9 @@ export default class Water extends Phaser.GameObjects.Sprite {
   row: number;
   col: number;
   floor: number;
+  target: { x: number; y: number };
+  animationMask?: Phaser.GameObjects.Graphics;
+  animating = true;
   adjacentTiles: {
     top?: Water | Wall;
     bottom?: Water | Wall;
@@ -19,7 +22,8 @@ export default class Water extends Phaser.GameObjects.Sprite {
     row: number,
     col: number,
     floor: number,
-    level: number
+    level: number,
+    direction: "up" | "down" | "left" | "right" | "in"
   ) {
     super(
       scene as MainScene,
@@ -32,19 +36,74 @@ export default class Water extends Phaser.GameObjects.Sprite {
     this.col = col;
     this.floor = floor;
     this.level = level;
-    this.alpha = 0.5;
+    this.y -= this.level;
+    this.target = { x: this.x, y: this.y };
+    const { cellHeight, cellWidth, floorHeight: maxLevel } = this.scene;
+
+    this.alpha = Math.max(Math.min(this.level / maxLevel, 0.8));
+    this.animationMask = scene.add.graphics();
+    this.animationMask.fillRect(
+      this.x - cellWidth / 2,
+      this.y - cellHeight / 2,
+      cellWidth,
+      cellHeight
+    );
+    this.animationMask.alpha = 0;
+
+    //Set up position for animation
+    switch (direction) {
+      case "up":
+        this.y += cellHeight;
+        break;
+      case "down":
+        this.y -= cellHeight;
+        break;
+      case "left":
+        this.x += cellWidth;
+        break;
+      case "right":
+        this.x -= cellWidth;
+        break;
+    }
+    this.scene.add.existing(this);
 
     this.setOrigin(0.5, 0.5);
     this.setDepth(row + floor);
-    this.update();
-
-    this.scene.add.existing(this);
+    this.animate(direction);
+  }
+  animate(direction: "up" | "down" | "left" | "right" | "in") {
+    if (!this.animationMask) return;
+    this.setMask(
+      new Phaser.Display.Masks.GeometryMask(this.scene, this.animationMask)
+    );
+    if (direction === "in") {
+      this.clearMask();
+      this.animating = false;
+      this.animationMask?.destroy();
+      return;
+    }
+    this.scene.tweens.add({
+      targets: [this],
+      duration: 75,
+      x: this.target.x,
+      y: this.target.y,
+      ease: "Linear",
+      onComplete: () => {
+        this.clearMask();
+        this.animating = false;
+        this.animationMask?.destroy();
+      },
+    });
   }
   update() {
+    const { floorHeight: maxLevel } = this.scene;
     this.y =
-      this.row * this.scene.cellHeight + this.scene.cellHeight / 2 - this.level;
+      this.row * this.scene.cellHeight +
+      this.scene.cellHeight / 2 -
+      Math.floor(this.level);
+    this.alpha = Math.max(Math.min(Math.floor(this.level) / maxLevel, 0.8));
   }
   remove() {
-    //
+    this.destroy();
   }
 }
