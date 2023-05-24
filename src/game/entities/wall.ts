@@ -278,6 +278,14 @@ export default class Wall extends Phaser.GameObjects.Sprite {
     else if (direction === "right" && this.collideRight) return true;
     else return false;
   }
+
+  increase() {
+    //
+  }
+  decrease() {
+    //
+  }
+
   remove() {
     //Can only be removed in editor
     if (!this.scene) return;

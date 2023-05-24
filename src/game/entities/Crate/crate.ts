@@ -151,6 +151,10 @@ class Crate extends Phaser.GameObjects.Sprite {
     );
   }
   generateShadow() {
+    if (this.adjacentCrates.below) {
+      this.shadow.alpha = 0;
+      return;
+    }
     const { shadowOffset } = this.scene;
     this.shadow.x = this.x + shadowOffset.x;
     this.shadow.y = this.y + shadowOffset.y;

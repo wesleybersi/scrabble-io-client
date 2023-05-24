@@ -137,6 +137,9 @@ export function isObstructed(player: Player, direction: Direction) {
     if (targetWall.collidesOn.includes(player.floor)) {
       if (targetWall.isColliding(direction)) return true;
     }
+    if (Math.max(...targetWall.collidesOn) + 1 < player.floor) {
+      return true;
+    }
   }
 
   if (player.floor > 0 && !targetWall && !targetCrate && !targetRamp) {

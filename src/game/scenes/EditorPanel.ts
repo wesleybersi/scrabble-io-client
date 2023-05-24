@@ -241,7 +241,7 @@ class EditorPanel extends Phaser.Scene {
     if (this.editor.enabled) {
       this.canvasHeight = window.innerHeight;
     }
-    this.cursor.update();
+    // this.cursor.update();
   }
 }
 

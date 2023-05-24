@@ -1,13 +1,13 @@
-import { FloorTile } from "./../temp/tileProvider";
+import MainScene from "../scenes/MainScene";
+
 import { Cardinal, Direction } from "../types";
 import { Player } from "./Player/player";
-
-import MainScene from "../scenes/MainScene";
 import Laser from "./Laser/laser";
 import Crate from "./Crate/crate";
-import Bubble from "./bubble";
 import Wall from "./wall";
 import Ramp from "./ramp";
+import Water from "./Water/water";
+import Flow from "./WaterFlow/Flow";
 import { getAdjacentTiles } from "../utils/opposite";
 
 class Editor extends Phaser.GameObjects.Graphics {
@@ -105,7 +105,7 @@ class Editor extends Phaser.GameObjects.Graphics {
           this.selected = "Laser";
           break;
         case "-":
-          this.selected = "Lava";
+          this.selected = "Water";
           break;
         case "r":
           if (this.currentRotation === "up") this.currentRotation = "right";
@@ -317,27 +317,11 @@ class Editor extends Phaser.GameObjects.Graphics {
       case "Void":
         tilemap.placeVoid(col, row);
         break;
-      case "Lava":
-        tilemap.placeLavaTile(col, row);
-        break;
-      case "Bubble":
-        if (!placeByClicking) return;
-        new Bubble(
-          this.scene,
-          col * cellWidth + cellWidth / 2,
-          row * cellHeight + cellHeight / 2,
-          row,
-          col,
-          "left"
-        );
-        break;
       case "HalfWall":
         if (!wall) new Wall(this.scene, "half-wall", row, col);
-
         break;
       case "Wall":
         if (!wall) new Wall(this.scene, "wall", row, col);
-
         break;
       case "BigWall":
         if (!wall) new Wall(this.scene, "big-wall", row, col);
@@ -452,28 +436,13 @@ class Editor extends Phaser.GameObjects.Graphics {
           );
         }
         break;
-      // case "Explosive":
-      //   if (wall) return;
-      //   if (crate && crate instanceof Crate) {
-      //     if (this.buttons.shift && crate.crateType === "Metal") {
-      //       crate.connectShape();
-      //       return;
-      //     }
-      //   }
-      //   if (!crate) {
-      //     if (player.row === row && player.col === col) return;
-      //     new Crate(
-      //       this.scene as MainScene,
-      //       "Explosive",
-      //       7,
-      //       row,
-      //       col,
-      //       col * cellWidth,
-      //       row * cellHeight,
-      //       this.buttons.shift //Hold CMD to connect blocks
-      //     );
-      //   }
-      //   break;
+      case "Water":
+        {
+          if (!placeByClicking) return;
+          const initialWaterLevel = 12;
+          new Flow(this.scene, row, col, 0, initialWaterLevel);
+        }
+        break;
       case "Ice":
         if (wall) return;
         if (floorTile && placeByClicking) {
@@ -489,10 +458,7 @@ class Editor extends Phaser.GameObjects.Graphics {
           tilemap.placeIceTile(col, row);
         }
         break;
-      case "Water":
-        if (wall) return;
-        // toggleFloorTile("Water");
-        break;
+
       case "Laser":
         if (wall) return;
         toggleLaser();

@@ -124,7 +124,11 @@ export function moveComplete(crate: Crate) {
       const otherCrate = allCrates[crate.floor - 1].get(
         `${crate.row},${crate.col}`
       );
-      if (!wall && !otherCrate) {
+
+      if (
+        (!wall || (wall && Math.max(...wall.collidesOn) + 1 < crate.floor)) &&
+        !otherCrate
+      ) {
         const { cellHeight } = crate.scene;
         allCrates[crate.floor].delete(`${crate.row},${crate.col}`);
         crate.isFalling = true;

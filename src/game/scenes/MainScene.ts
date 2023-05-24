@@ -5,11 +5,12 @@ import Portal from "../entities/portal";
 import Crate from "../entities/Crate/crate";
 import Wall from "../entities/wall";
 import Ramp from "../entities/ramp";
+import Flow from "../entities/WaterFlow/Flow";
+import Water from "../entities/Water/water";
 
 import Editor from "../entities/editor";
 
 import tilesetFloor from "../assets/images/tilesets/floor.png";
-import tilesetWalls from "../assets/images/tilesets/walls.png";
 
 import spritesheetPlayer from "../assets/images/spritesheets/player-base.png";
 
@@ -20,6 +21,8 @@ import spritesheetCrates from "../assets/images/spritesheets/crates-40.png";
 import spritesheetHalfWall from "../assets/images/spritesheets/walls-40.png";
 import spritesheetWall from "../assets/images/spritesheets/walls-56.png";
 import spritesheetBigWall from "../assets/images/spritesheets/walls-72.png";
+
+import spritesheetWater from "../assets/images/spritesheets/water.png";
 
 import imageRampHorizontal from "../assets/images/spritesheets/ramp-h.png";
 import imageRampVertical from "../assets/images/spritesheets/ramp-v.png";
@@ -33,7 +36,7 @@ import imageEntrance from "../assets/images/entrance.png";
 import imageSpikes from "../assets/images/spikes.png";
 import imageBubble from "../assets/images/bubble.png";
 
-import cursor from "../assets/images/bigger-cursor.png";
+import cursor from "../assets/images/bigger-cursor-2.png";
 
 import Laser from "../entities/Laser/laser";
 import sfxFireBlue from "../assets/audio/fire-blue.wav";
@@ -69,6 +72,16 @@ export default class MainScene extends Phaser.Scene {
   allRamps: Array<Map<string, Ramp>> = Array.from(
     { length: this.maxFloor },
     () => new Map<string, Ramp>()
+  ); //Each index of the array represents a floor.
+
+  //Water
+  allWaterFlows: Array<Map<string, Flow>> = Array.from(
+    { length: this.maxFloor },
+    () => new Map<string, Flow>()
+  ); //Each index of the array represents a floor.
+  allWater: Array<Map<string, Water>> = Array.from(
+    { length: this.maxFloor },
+    () => new Map<string, Water>()
   ); //Each index of the array represents a floor.
 
   allLasers: Map<string, Laser> = new Map();
@@ -119,18 +132,14 @@ export default class MainScene extends Phaser.Scene {
     this.load.image("bubble", imageBubble);
 
     this.load.spritesheet("cursor", cursor, {
-      frameWidth: cellWidth,
-      frameHeight: cellHeight,
+      frameWidth: 38,
+      frameHeight: 30,
     });
 
     //Tilesets
     this.load.spritesheet("floor-tileset", tilesetFloor, {
       frameWidth: cellWidth,
       frameHeight: cellWidth,
-    });
-    this.load.spritesheet("wall-tileset", tilesetWalls, {
-      frameWidth: cellWidth,
-      frameHeight: cellHeight,
     });
 
     //Spritsheets
@@ -158,6 +167,11 @@ export default class MainScene extends Phaser.Scene {
     this.load.spritesheet("big-wall", spritesheetBigWall, {
       frameWidth: 32,
       frameHeight: 72,
+    });
+
+    this.load.spritesheet("water", spritesheetWater, {
+      frameWidth: 32,
+      frameHeight: 24,
     });
 
     this.load.spritesheet("player", spritesheetPlayer, {
@@ -205,13 +219,13 @@ export default class MainScene extends Phaser.Scene {
     const worldWidth = this.colCount * this.cellWidth;
     const worldHeight = this.rowCount * this.cellHeight;
 
-    this.cursor = new Cursor(
-      this,
-      this.hover.col * this.cellWidth + this.cellWidth / 2,
-      this.hover.row * this.cellHeight + this.cellHeight / 2,
-      this.hover.row,
-      this.hover.col
-    );
+    // this.cursor = new Cursor(
+    //   this,
+    //   this.hover.col * this.cellWidth + this.cellWidth / 2,
+    //   this.hover.row * this.cellHeight + this.cellHeight / 2,
+    //   this.hover.row,
+    //   this.hover.col
+    // );
     // this.game.canvas.style.cursor = "none";
 
     //Audio
@@ -232,7 +246,7 @@ export default class MainScene extends Phaser.Scene {
     camera.zoom = this.gameZoomLevel;
 
     // camera.setDeadzone(camera.worldView.width / camera.zoom, camera.worldView.height / camera.zoom);
-    // camera.startFollow(this.player, true, 0.1, 0.1);
+    camera.startFollow(this.player, true, 0.1, 0.1);
     camera.roundPixels = true;
     camera.centerOn(this.player.x, this.player.y);
     this.editor = new Editor(this, camera, this.buttons, this.player);
@@ -342,7 +356,7 @@ export default class MainScene extends Phaser.Scene {
             this.scene.launch("Editor-Panel", this);
             this.sound.play("edit-mode");
             this.cursor.setVisible(true);
-            this.cursor.update();
+            // this.cursor.update();
           }
           break;
         case "Meta":
@@ -402,10 +416,16 @@ export default class MainScene extends Phaser.Scene {
       this.frameCounter = 0;
     }
 
-    if (this.allLasers.size > 0) {
-      for (const [, laser] of this.allLasers) {
-        if (laser && laser.valid) laser.update();
-      }
+    if (this.frameCounter % 20 === 0) {
+      this.allWaterFlows.forEach((floor) => {
+        for (const [pos, flow] of floor) {
+          flow.update();
+        }
+      });
+    }
+
+    for (const [, laser] of this.allLasers) {
+      if (laser && laser.valid) laser.update();
     }
 
     if (this.resetAll) {

@@ -1,0 +1,142 @@
+import MainScene from "../../scenes/MainScene";
+import Water from "../Water/water";
+import { getAdjacentTiles } from "../../utils/opposite";
+import Wall from "../wall";
+
+export default class Flow extends Phaser.GameObjects.Sprite {
+  scene: MainScene;
+  row: number;
+  col: number;
+  floor: number;
+  initialLevel: number;
+  intialLevelMet = false;
+  capacity = 16; // Total tiles * floorHeight
+  currentCapacityFilled = 16;
+  level: number;
+  waterMap: Map<string, Water>;
+  constructor(
+    scene: MainScene,
+    row: number,
+    col: number,
+    floor: number,
+    initialFillLevel: number
+  ) {
+    super(
+      scene as MainScene,
+      col * scene.cellWidth + scene.cellWidth / 2,
+      row * scene.cellHeight + scene.cellHeight / 2,
+      "water"
+    );
+    this.scene = scene;
+    this.row = row;
+    this.col = col;
+    this.floor = floor;
+    this.initialLevel = initialFillLevel;
+    this.level = initialFillLevel;
+    this.waterMap = new Map();
+    this.alpha = 0;
+
+    this.setOrigin(0.5, 0.5);
+    this.setDepth(row + floor);
+
+    const { allWaterFlows } = this.scene;
+    allWaterFlows[this.floor].set(`${row},${col}`, this);
+
+    this.scene.add.existing(this);
+  }
+  update() {
+    const { allWalls, allCrates, floorHeight: maxLevel } = this.scene;
+    const visited = new Set();
+    this.currentCapacityFilled = this.waterMap.size * this.level;
+
+    const findFlow = (row: number, col: number) => {
+      const { top, left, bottom, right } = getAdjacentTiles(row, col);
+
+      const adjacentTiles = {
+        top: {
+          wall: allWalls.get(`${top.row},${top.col}`),
+          crate: allCrates[this.floor].get(`${top.row},${top.col}`),
+          water: this.waterMap.get(`${top.row},${top.col}`),
+        },
+        bottom: {
+          wall: allWalls.get(`${bottom.row},${bottom.col}`),
+          crate: allCrates[this.floor].get(`${top.row},${top.col}`),
+          water: this.waterMap.get(`${bottom.row},${bottom.col}`),
+        },
+        left: {
+          wall: allWalls.get(`${left.row},${left.col}`),
+          crate: allCrates[this.floor].get(`${left.row},${left.col}`),
+          water: this.waterMap.get(`${left.row},${left.col}`),
+        },
+        right: {
+          wall: allWalls.get(`${right.row},${right.col}`),
+          crate: allCrates[this.floor].get(`${right.row},${right.col}`),
+          water: this.waterMap.get(`${right.row},${right.col}`),
+        },
+      };
+      console.log(adjacentTiles);
+
+      for (const [side, tile] of Object.entries(adjacentTiles)) {
+        let aRow = row;
+        let aCol = col;
+        if (side === "top") aRow--;
+        else if (side === "bottom") aRow++;
+        else if (side === "left") aCol--;
+        else if (side === "right") aCol++;
+        const aPos = `${aRow},${aCol}`;
+        if (visited.has(aPos)) continue;
+        visited.add(aPos);
+        if (tile.wall || tile.crate) {
+          //Water contained by wall or crate
+          continue;
+        } else if (!tile.wall && !tile.crate && !tile.water) {
+          const water = new Water(
+            this.scene,
+            aRow,
+            aCol,
+            this.floor,
+            !this.intialLevelMet ? this.initialLevel : this.level
+          );
+          this.waterMap.set(aPos, water);
+          visited.add(aPos);
+          findFlow(aRow, aCol);
+          continue;
+        } else if (tile.water) {
+          //Update water tile to current
+          if (!this.intialLevelMet) tile.water.level = this.initialLevel;
+          else tile.water.level = this.level;
+          tile.water.update();
+          visited.add(aPos);
+          findFlow(tile.water.row, tile.water.col);
+        }
+      }
+    };
+    findFlow(this.row, this.col);
+
+    if (!this.intialLevelMet) {
+      this.intialLevelMet = true;
+      return;
+    }
+
+    this.capacity = this.waterMap.size * maxLevel;
+    this.level = Math.floor(
+      (this.currentCapacityFilled / this.capacity) * maxLevel
+    );
+
+    console.log(this.currentCapacityFilled, "of", this.capacity, "filled");
+    console.log(
+      "Waterlevel:",
+      this.level,
+      "flowing in",
+      this.waterMap.size,
+      "tiles"
+    );
+  }
+
+  merge() {
+    //Two waterflows become one
+  }
+  remove() {
+    //Destroy current flow
+  }
+}

@@ -55,10 +55,15 @@ export default class Cursor extends Phaser.GameObjects.Sprite {
     this.scene.add.existing(this);
   }
   update(): void {
-    const { hover, cellSize, buttons } = this.scene;
-    this.x = hover.col * cellSize + cellSize / 2;
-    this.y = hover.row * cellSize + cellSize / 2;
+    const { hover, cellWidth, cellHeight, buttons } = this.scene;
 
+    if (hover.object) {
+      this.x = hover.object.x;
+      this.y = hover.object.y - 8;
+    } else {
+      this.x = hover.col * cellWidth + cellWidth / 2;
+      this.y = hover.row * cellHeight + cellHeight / 2 + 2;
+    }
     if (buttons.meta) {
       this.setTint(0xff0000);
     } else if (buttons.fill) {

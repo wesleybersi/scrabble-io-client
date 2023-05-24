@@ -32,6 +32,7 @@ export default function prepareMovement(
   if (
     targetWall &&
     targetWall.collidesOn.includes(crate.floor) &&
+    // Math.max(...targetWall.collidesOn) === crate.floor &&
     targetWall.isColliding(direction)
   ) {
     aborted = true;
