@@ -17,13 +17,16 @@ export default class Water extends Phaser.GameObjects.Sprite {
     left?: Water | Wall;
     right?: Water | Wall;
   } = { top: undefined, bottom: undefined, left: undefined, right: undefined };
+  isBeingDrained = false;
+  waterMap: Map<string, Water>;
   constructor(
     scene: MainScene,
     row: number,
     col: number,
     floor: number,
     level: number,
-    direction: "up" | "down" | "left" | "right" | "in"
+    direction: "up" | "down" | "left" | "right" | "in",
+    waterMap: Map<string, Water>
   ) {
     super(
       scene as MainScene,
@@ -38,6 +41,7 @@ export default class Water extends Phaser.GameObjects.Sprite {
     this.level = level;
     this.y -= this.level;
     this.target = { x: this.x, y: this.y };
+    this.waterMap = waterMap;
     const { cellHeight, cellWidth, floorHeight: maxLevel } = this.scene;
 
     this.alpha = Math.max(Math.min(this.level / maxLevel, 0.8));
@@ -102,8 +106,10 @@ export default class Water extends Phaser.GameObjects.Sprite {
       this.scene.cellHeight / 2 -
       Math.floor(this.level);
     this.alpha = Math.max(Math.min(Math.floor(this.level) / maxLevel, 0.8));
+    this.setDepth(this.row + Math.floor(this.level / maxLevel));
   }
   remove() {
+    this.waterMap.delete(`${this.row},${this.col}`);
     this.destroy();
   }
 }

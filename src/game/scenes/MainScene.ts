@@ -26,6 +26,7 @@ import spritesheetWater from "../assets/images/spritesheets/water.png";
 
 import imageRampHorizontal from "../assets/images/spritesheets/ramp-h.png";
 import imageRampVertical from "../assets/images/spritesheets/ramp-v.png";
+import imageGrate from "../assets/images/grate.png";
 
 import spritesheetExplosion from "../assets/images/spritesheets/explosion.png";
 import spritesheetCracks from "../assets/images/spritesheets/wallcrack.png";
@@ -128,6 +129,7 @@ export default class MainScene extends Phaser.Scene {
     this.load.image("entrance", imageEntrance);
     this.load.image("spikes", imageSpikes);
     this.load.image("bubble", imageBubble);
+    this.load.image("grate", imageGrate);
 
     //Tilesets
     this.load.spritesheet("floor-tileset", tilesetFloor, {

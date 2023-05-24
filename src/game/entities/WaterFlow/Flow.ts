@@ -15,7 +15,8 @@ export default class Flow extends Phaser.GameObjects.Sprite {
   level: number;
   waterMap: Map<string, Water>;
   animating = false;
-
+  drainCount = 0;
+  raiseCount = 0;
   constructor(
     scene: MainScene,
     row: number,
@@ -39,7 +40,7 @@ export default class Flow extends Phaser.GameObjects.Sprite {
     this.alpha = 0;
 
     this.setOrigin(0.5, 0.5);
-    this.setDepth(row + floor);
+    // this.setDepth(row + floor);
 
     const { allWaterFlows } = this.scene;
     allWaterFlows[this.floor].set(`${row},${col}`, this);
@@ -57,6 +58,8 @@ export default class Flow extends Phaser.GameObjects.Sprite {
     const visited = new Set();
 
     this.currentCapacityFilled = this.waterMap.size * this.level;
+
+    const animatingWater: Water[] = [];
 
     let animating = false;
     const findFlow = (row: number, col: number) => {
@@ -87,6 +90,10 @@ export default class Flow extends Phaser.GameObjects.Sprite {
         },
       };
 
+      //TODO
+      //If tile is drain this.drain++;
+      //If tile is raise this.raise++
+
       for (const [side, tile] of Object.entries(adjacentTiles)) {
         let aRow = row;
         let aCol = col;
@@ -105,7 +112,6 @@ export default class Flow extends Phaser.GameObjects.Sprite {
         } else if (tile.crate) {
           if (tile.water) {
             tile.water.remove();
-            this.waterMap.delete(aPos);
           }
           visited.add(aPos);
           continue;
@@ -117,29 +123,50 @@ export default class Flow extends Phaser.GameObjects.Sprite {
             aCol,
             this.floor,
             !this.initialLevelMet ? this.initialLevel : this.level,
-            !this.initialLevelMet ? "in" : direction
+            !this.initialLevelMet ? "in" : direction,
+            this.waterMap
           );
+
           this.waterMap.set(aPos, water);
           visited.add(aPos);
+
+          //TODO Its own function
+          //If down or up
+          //Check left right from aPos
+          //If left or right
+          //Check down and up from aPos
+          //If so, add diagonal animations, and add to visited
+
           if (!this.initialLevelMet) {
             findFlow(aRow, aCol);
             continue;
           }
           return;
         } else if (tile.water) {
+          if (tile.water.isBeingDrained) {
+            this.currentCapacityFilled -= 1;
+          }
+
           if (tile.water.animating) {
+            animatingWater.push(tile.water);
             animating = true;
             //If tile is animating, its basically a wall, and we'll wait for the animation to finish.
             visited.add(aPos);
+
             return;
           }
+
+          //If water is on top of drain;
 
           //Update water tile to current
           if (!this.initialLevelMet) tile.water.level = this.initialLevel;
           else tile.water.level = this.level;
           tile.water.update();
           visited.add(aPos);
-          findFlow(tile.water.row, tile.water.col);
+
+          if (!tile.water.isBeingDrained) {
+            findFlow(tile.water.row, tile.water.col);
+          }
         }
       }
     };
@@ -154,7 +181,16 @@ export default class Flow extends Phaser.GameObjects.Sprite {
     this.capacity = this.waterMap.size * maxLevel;
     this.level = (this.currentCapacityFilled / this.capacity) * maxLevel;
 
-    console.log(this.currentCapacityFilled, "of", this.capacity, "filled");
+    //Drain and raise if neccesary
+    if (this.raiseCount) this.currentCapacityFilled += this.raiseCount;
+    if (this.drainCount) this.currentCapacityFilled -= this.drainCount;
+
+    console.log(
+      Math.floor(this.currentCapacityFilled),
+      "of",
+      this.capacity,
+      "filled"
+    );
     console.log(
       "Waterlevel:",
       this.level,
@@ -162,19 +198,16 @@ export default class Flow extends Phaser.GameObjects.Sprite {
       this.waterMap.size,
       "tiles"
     );
+    this.scene.events.emit("Water Flowing", this.waterMap, animatingWater);
     if (!Math.floor(this.level)) this.remove();
   }
 
   merge() {
     //Two waterflows intersect and become one
   }
-  increase() {
-    this.currentCapacityFilled++;
-  }
-  decrease() {
-    this.currentCapacityFilled--;
-  }
+
   remove() {
+    console.log("Water completely drained");
     for (const [pos, waterTile] of this.waterMap) {
       this.waterMap.delete(pos);
       waterTile.remove();

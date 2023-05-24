@@ -6,7 +6,7 @@ import Laser from "./Laser/laser";
 import Crate from "./Crate/crate";
 import Wall from "./wall";
 import Ramp from "./ramp";
-import Water from "./Water/water";
+import Drain from "./drain";
 import Flow from "./WaterFlow/Flow";
 import { getAdjacentTiles } from "../utils/opposite";
 
@@ -41,6 +41,7 @@ class Editor extends Phaser.GameObjects.Graphics {
     | "Water"
     | "Laser"
     | "Lava"
+    | "Drain"
     | "Propulsion" = "Wall";
   placement!: Cardinal;
   camera!: Phaser.Cameras.Scene2D.Camera;
@@ -106,6 +107,9 @@ class Editor extends Phaser.GameObjects.Graphics {
           break;
         case "-":
           this.selected = "Water";
+          break;
+        case "g":
+          this.selected = "Drain";
           break;
         case "r":
           if (this.currentRotation === "up") this.currentRotation = "right";
@@ -439,9 +443,13 @@ class Editor extends Phaser.GameObjects.Graphics {
       case "Water":
         {
           if (!placeByClicking) return;
-          const initialWaterLevel = 12;
+          const initialWaterLevel = 13;
           new Flow(this.scene, row, col, 0, initialWaterLevel);
         }
+        break;
+      case "Drain":
+        if (!placeByClicking) return;
+        new Drain(this.scene, row, col);
         break;
       case "Ice":
         if (wall) return;
