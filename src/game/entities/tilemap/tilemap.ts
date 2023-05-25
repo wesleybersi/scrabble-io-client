@@ -1,4 +1,4 @@
-import MainScene from "../../scenes/MainScene";
+import MainScene from "../../scenes/Main/MainScene";
 import CornerPiece from "../cornerpiece";
 
 export default class BasicTilemap {

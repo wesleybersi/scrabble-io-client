@@ -1,14 +1,8 @@
-import Remover from "./entities/remover";
-import Laser from "./entities/Laser/laser";
+import Wall from "./entities/wall";
 import Crate from "./entities/Crate/crate";
+import Ramp from "./entities/ramp";
 
-// interface Adjacent {
-//   top: [number, number];
-//   bottom: [number, number];
-//   left: [number, number];
-//   right: [number, number];
-// }
-
+export type HoverTarget = Wall | Ramp | Crate;
 export type Cardinal = "top" | "bottom" | "left" | "right";
 export type Direction = "up" | "down" | "left" | "right";
 

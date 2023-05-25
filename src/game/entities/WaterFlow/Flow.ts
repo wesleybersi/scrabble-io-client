@@ -1,4 +1,4 @@
-import MainScene from "../../scenes/MainScene";
+import MainScene from "../../scenes/Main/MainScene";
 import Water from "../Water/water";
 import { Cardinal } from "../../types";
 import { cardinalToDirection, getAdjacentTiles } from "../../utils/opposite";
@@ -144,6 +144,7 @@ export default class Flow extends Phaser.GameObjects.Sprite {
           return;
         } else if (tile.water) {
           if (tile.water.isBeingDrained) {
+            //If water is on top of drain;
             this.currentCapacityFilled -= 1;
           }
 
@@ -151,12 +152,10 @@ export default class Flow extends Phaser.GameObjects.Sprite {
             animatingWater.push(tile.water);
             animating = true;
             //If tile is animating, its basically a wall, and we'll wait for the animation to finish.
+            //TODO Multiple animations at once
             visited.add(aPos);
-
-            return;
+            break;
           }
-
-          //If water is on top of drain;
 
           //Update water tile to current
           if (!this.initialLevelMet) tile.water.level = this.initialLevel;

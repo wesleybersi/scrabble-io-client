@@ -1,16 +1,14 @@
 import Portal from "../portal";
 import Wall from "../wall";
 
-import MainScene from "../../scenes/MainScene";
+import MainScene from "../../scenes/Main/MainScene";
 // import placePortal from "./portals/placePortal";
 import { Clone } from "./clone";
 import { Cardinal, Direction } from "../../types";
 import {
   cardinalToDirection,
-  directionToAngle,
   directionToCardinal,
   getOppositeDirection,
-  getOppositeSide,
 } from "../../utils/opposite";
 import { allCardinalsNull } from "../../utils/constants";
 import resetPortals from "./portals/resetPortals";
@@ -86,7 +84,7 @@ export class Player extends Phaser.GameObjects.Sprite {
     this.name = "Player";
     this.portalClone = null;
     this.portalReflection = null;
-    this.row = Math.floor(y - scene.cellHeight / 2) / scene.cellHeight;
+    this.row = Math.floor(y - scene.cellHeight / 2 + this.z) / scene.cellHeight;
     this.col = Math.floor(x - scene.cellWidth / 2) / scene.cellWidth;
     this.y -= scene.cellHeight / 2;
     this.startTile = new Entrance(scene, this.row, this.col);
@@ -168,8 +166,15 @@ export class Player extends Phaser.GameObjects.Sprite {
       for (const [direction, movementForced] of Object.entries(
         this.forceMovement
       )) {
-        if (this.scene.editor.enabled || movementForced) return;
+        if (this.scene.mode === "Create" || movementForced) return;
       }
+
+      if (
+        this.scene.mode !== "Play" &&
+        this.state !== "Idle" &&
+        this.state !== "Holding"
+      )
+        return;
 
       switch (event.key) {
         case "W":
@@ -202,7 +207,7 @@ export class Player extends Phaser.GameObjects.Sprite {
           break;
         case "Shift":
           {
-            if (this.scene.editor.enabled) return;
+            if (this.scene.mode === "Create") return;
 
             const { allCrates } = this.scene;
 
@@ -213,10 +218,7 @@ export class Player extends Phaser.GameObjects.Sprite {
               const crate = allCrates[this.floor].get(
                 `${adjacent.row},${adjacent.col}`
               );
-              console.log(crate);
-              console.log(crate?.floor);
               if (crate && crate.floor === this.floor && crate.active) {
-                console.log("Holding succesfully");
                 this.holding[side as Cardinal] = crate;
                 this.state = "Holding";
                 return;
@@ -249,7 +251,6 @@ export class Player extends Phaser.GameObjects.Sprite {
           this.moving.right = false;
           break;
         case "Shift":
-          console.log("NOT HOLDINg");
           if (this.state === "Holding") {
             this.state = "Idle";
           }
@@ -257,30 +258,6 @@ export class Player extends Phaser.GameObjects.Sprite {
           break;
       }
     });
-    //   this.scene.input.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
-    //     if (this.scene.editor.enabled) return;
-    //     // this.placePortal(pointer.rightButtonDown() ? "b" : "a");
-
-    //     const { hover, allCrates } = this.scene;
-
-    //     for (const [side, adjacent] of Object.entries(this.adjacentTiles)) {
-    //       if (adjacent.row === hover.row && adjacent.col === hover.col) {
-    //         const crate = allCrates[this.floor].get(`${hover.row},${hover.col}`);
-    //         if (crate && crate.floor === this.floor && crate.active) {
-    //           this.holding[side as Cardinal] = crate;
-    //           this.state = "Holding";
-    //           return;
-    //         }
-    //       }
-    //     }
-    //   });
-    //   this.scene.input.on("pointerup", (pointer: Phaser.Input.Pointer) => {
-    //     if (this.state === "Holding") {
-    //       this.state = "Idle";
-    //     }
-    //     this.holding = Object.assign({}, allCardinalsNull);
-    //   });
-    // }
   }
 
   createAnimations() {
@@ -378,8 +355,7 @@ export class Player extends Phaser.GameObjects.Sprite {
   }
 
   place(x: number, y: number) {
-    this.row =
-      Math.floor(y - this.scene.cellHeight / 2) / this.scene.cellHeight;
+    this.row = Math.floor(y) / this.scene.cellHeight;
     this.col = Math.floor(x - this.scene.cellWidth / 2) / this.scene.cellWidth;
   }
 
@@ -396,17 +372,16 @@ export class Player extends Phaser.GameObjects.Sprite {
   resetToOrigin() {
     const { cellWidth, cellHeight } = this.scene;
 
+    this.x = this.origin.col * cellWidth + cellWidth / 2;
+    this.y = this.origin.row * cellHeight + cellHeight / 2;
+    this.y -= cellHeight / 2;
     this.row = this.origin.row;
     this.col = this.origin.col;
-    this.x = this.origin.col * cellWidth + cellWidth / 2;
-    this.y = this.origin.row * cellHeight + this.z;
+
     this.holding = Object.assign({}, allCardinalsNull);
     this.moving = Object.assign({}, allDirectionsFalse);
     this.forceMovement = Object.assign({}, allDirectionsFalse);
-    const coolDown = setTimeout(() => {
-      this.state = "Idle";
-      clearTimeout(coolDown);
-    }, 500);
+    this.state = "Idle";
   }
 
   update() {
@@ -484,7 +459,6 @@ export class Player extends Phaser.GameObjects.Sprite {
 
         return;
       case "Editing":
-        this.resetToOrigin();
         this.z = 0;
         this.floor = 0;
         this.forceMovement = Object.assign({}, allDirectionsFalse);

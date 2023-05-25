@@ -1,4 +1,4 @@
-import MainScene from "../../scenes/MainScene";
+import MainScene from "../../scenes/Main/MainScene";
 
 import Wall from "../wall";
 
@@ -88,7 +88,7 @@ export default class Water extends Phaser.GameObjects.Sprite {
     }
     this.scene.tweens.add({
       targets: [this],
-      duration: 75,
+      duration: 125,
       x: this.target.x,
       y: this.target.y,
       ease: "Linear",

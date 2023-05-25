@@ -1,4 +1,4 @@
-import MainScene from "../../scenes/MainScene";
+import MainScene from "../../scenes/Main/MainScene";
 
 export default class Entrance extends Phaser.GameObjects.Sprite {
   scene: MainScene;
@@ -12,6 +12,7 @@ export default class Entrance extends Phaser.GameObjects.Sprite {
       col * scene.cellWidth + scene.cellWidth / 2,
       "entrance"
     );
+
     this.scene = scene;
     this.row = row;
     this.col = col;
@@ -19,7 +20,7 @@ export default class Entrance extends Phaser.GameObjects.Sprite {
     this.y = row * scene.cellHeight + scene.cellHeight / 2;
 
     this.setDepth(1);
-    this.alpha = 0;
+    // this.alpha = 0;
     this.draw();
 
     scene.add.existing(this);

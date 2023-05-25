@@ -1,4 +1,4 @@
-import MainScene from "../scenes/MainScene";
+import MainScene from "../scenes/Main/MainScene";
 import Flow from "./WaterFlow/Flow";
 import Water from "./Water/water";
 
@@ -12,7 +12,7 @@ export default class Drain extends Phaser.GameObjects.Sprite {
       scene as MainScene,
       col * scene.cellWidth + scene.cellWidth / 2,
       row * scene.cellHeight + scene.cellHeight / 2,
-      "grate"
+      "drain"
     );
     this.scene = scene;
     this.row = row;

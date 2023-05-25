@@ -1,4 +1,4 @@
-import MainScene from "../scenes/MainScene";
+import MainScene from "../scenes/Main/MainScene";
 import { isWithinGrace } from "../utils/opposite";
 
 export default class Explosion extends Phaser.GameObjects.Sprite {

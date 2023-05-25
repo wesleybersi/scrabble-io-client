@@ -6,7 +6,7 @@ import tweenIntoVoid from "./tween-into-void";
 
 export default function tweenToTile(player: Player, col: number, row: number) {
   if (player.state === "Dead") return;
-  const { cellWidth, cellHeight, buttons } = player.scene;
+  const { cellWidth, cellHeight } = player.scene;
   if (player.portalClone) {
     exitPortal(player);
   }

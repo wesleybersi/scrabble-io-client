@@ -25,6 +25,9 @@ export function isObstructed(player: Player, direction: Direction) {
     colCount,
     tilemap,
   } = player.scene;
+
+  if (player.row % 1 != 0 || player.col % 1 !== 0) return true;
+
   const { floor } = tilemap;
   let side = getOppositeSide(directionToCardinal(direction));
   const { row: targetRow, col: targetCol } = directionToAdjacent(
@@ -37,6 +40,7 @@ export function isObstructed(player: Player, direction: Direction) {
   if (targetCol < 0 || targetCol >= colCount) return true; //Out of bounds
 
   const targetPos = `${targetRow},${targetCol}`;
+
   let targetFloor = floor.getTileAt(targetCol, targetRow);
   let targetWall = allWalls.get(targetPos);
   let targetRamp = allRamps[player.floor].get(targetPos);

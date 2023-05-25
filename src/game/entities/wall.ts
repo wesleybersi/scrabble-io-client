@@ -1,4 +1,4 @@
-import MainScene from "../scenes/MainScene";
+import MainScene from "../scenes/Main/MainScene";
 import { Direction } from "../types";
 
 export default class Wall extends Phaser.GameObjects.Sprite {
@@ -7,6 +7,7 @@ export default class Wall extends Phaser.GameObjects.Sprite {
   shadow!: Phaser.GameObjects.Image;
   topShadow!: Phaser.GameObjects.Image;
   zValue: number;
+  isGrate = false;
   row: number;
   col: number;
   floor: number;
@@ -87,9 +88,7 @@ export default class Wall extends Phaser.GameObjects.Sprite {
       this.scene.events.emit("Pointing at", this);
     });
     this.on("pointerout", () => {
-      if (this.scene.hover.object === this) {
-        this.scene.hover.object = null;
-      }
+      this.scene.events.emit("No longer pointing at", this);
     });
 
     this.update();
@@ -288,6 +287,7 @@ export default class Wall extends Phaser.GameObjects.Sprite {
 
   remove() {
     //Can only be removed in editor
+    this.setActive(false);
     if (!this.scene) return;
     const { allWalls, allCrates } = this.scene;
 

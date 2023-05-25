@@ -1,13 +1,12 @@
 import { useRef, useEffect } from "react";
 import useWindowSize from "../hooks/useWindowSize";
 import * as Phaser from "phaser";
-import Main from "./scenes/MainScene";
-import EditorPanel from "./scenes/EditorPanel";
+import MainScene from "./scenes/Main/MainScene";
+import { EditorScene } from "./scenes/Editor/EditorScene";
 
 import { create } from "zustand";
 
 const Game = () => {
-  const [windowSize, isResizing] = useWindowSize(200);
   const gameRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -28,7 +27,7 @@ const Game = () => {
       zoom: window.devicePixelRatio,
       parent: "phaser-game",
       backgroundColor: "#ffffff",
-      scene: [Main, EditorPanel],
+      scene: [MainScene, EditorScene],
       pixelArt: true,
       render: {
         antialias: true,
@@ -38,9 +37,6 @@ const Game = () => {
     };
 
     const game = new Phaser.Game(config);
-
-    //Global variables
-    // game.registry.set("cellSize", 16);
 
     return () => {
       if (game) {

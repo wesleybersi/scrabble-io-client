@@ -5,13 +5,13 @@ import tweenToTile from "./tween-to-tile";
 import { allDirectionsFalse } from "../../../utils/constants";
 
 import { directionToAdjacent } from "../../../utils/opposite";
-import tweenIntoVoid from "./tween-into-void";
 
 export default function handleMovement(player: Player) {
   if (player.state !== "Idle" && player.state !== "Holding") {
     return;
   }
-  const { events } = player.scene;
+  const { mode } = player.scene;
+  if (mode === "Create") return;
 
   player.portalClone = null;
   player.moveDuration = player.initialMoveDuration;

@@ -1,4 +1,4 @@
-import MainScene from "../scenes/MainScene";
+import MainScene from "../scenes/Main/MainScene";
 
 export default class Cracks extends Phaser.GameObjects.Sprite {
   scene: MainScene;

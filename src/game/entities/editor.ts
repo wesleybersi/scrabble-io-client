@@ -1,4 +1,4 @@
-import MainScene from "../scenes/MainScene";
+import MainScene from "../scenes/Main/MainScene";
 
 import { Cardinal, Direction } from "../types";
 import { Player } from "./Player/player";
@@ -171,34 +171,34 @@ class Editor extends Phaser.GameObjects.Graphics {
       this.startPos = null;
     });
     this.scene.input.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
-      if (this.buttons.fill) {
-        if (this.buttons.meta) {
-          const area = this.fillArea(
-            true,
-            this.scene.hover.row,
-            this.scene.hover.col,
-            "Clear"
-          );
-          console.log(area);
-          return;
-        }
+      // if (this.buttons.fill) {
+      //   if (this.buttons.meta) {
+      //     const area = this.fillArea(
+      //       true,
+      //       this.scene.hover.row,
+      //       this.scene.hover.col,
+      //       "Clear"
+      //     );
+      //     console.log(area);
+      //     return;
+      //   }
 
-        if (this.selected === "Ice" || this.selected === "Wall") {
-          const area = this.fillArea(
-            true,
-            this.scene.hover.row,
-            this.scene.hover.col,
-            this.selected
-          );
-          console.log(area);
-          return;
-        }
-      }
+      //   if (this.selected === "Ice" || this.selected === "Wall") {
+      //     const area = this.fillArea(
+      //       true,
+      //       this.scene.hover.row,
+      //       this.scene.hover.col,
+      //       this.selected
+      //     );
+      //     console.log(area);
+      //     return;
+      //   }
+      // }
 
-      if (!this.enabled) return;
+      // if (!this.enabled) return;
       this.startPos = { row: this.scene.hover.row, col: this.scene.hover.col };
       if (!pointer.rightButtonDown()) {
-        const { hover } = this.scene;
+        // const { hover } = this.scene;
 
         this.placeSelection(hover.row, hover.col, true);
       } else {
@@ -268,9 +268,7 @@ class Editor extends Phaser.GameObjects.Graphics {
       }
 
       if (wall) {
-        wall.setActive(false);
         wall.remove();
-        this.scene.events.emit("Walls Updated");
         return;
       }
       if (hover.object instanceof Wall) {

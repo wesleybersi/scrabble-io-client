@@ -1,4 +1,4 @@
-import MainScene from "../scenes/MainScene";
+import MainScene from "../scenes/Main/MainScene";
 import { Direction } from "../types";
 
 export default class Ramp extends Phaser.GameObjects.Sprite {
@@ -84,9 +84,7 @@ export default class Ramp extends Phaser.GameObjects.Sprite {
       scene.events.emit("Pointing at", this);
     });
     this.on("pointerout", () => {
-      if (this.scene.hover.object === this) {
-        scene.hover.object = null;
-      }
+      this.scene.events.emit("No longer pointing at", this);
     });
 
     this.generateShadow();

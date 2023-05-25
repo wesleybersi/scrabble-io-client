@@ -112,9 +112,7 @@ class Crate extends Phaser.GameObjects.Sprite {
       this.scene.events.emit("Pointing at", this);
     });
     this.on("pointerout", () => {
-      if (this.scene.hover.object === this) {
-        this.scene.hover.object = null;
-      }
+      this.scene.events.emit("No longer pointing at", this);
     });
 
     console.log("Row:", row, "Col:", col, "Floor", floor);

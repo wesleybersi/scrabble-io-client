@@ -1,6 +1,6 @@
 import { Cardinal } from "../types";
 import { Player } from "./Player/player";
-import MainScene from "../scenes/MainScene";
+import MainScene from "../scenes/Main/MainScene";
 
 class Portal extends Phaser.GameObjects.Graphics {
   scene: MainScene;
