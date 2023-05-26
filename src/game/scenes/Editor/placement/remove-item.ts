@@ -1,6 +1,6 @@
 import { EditorScene } from "../EditorScene";
 import Wall from "../../../entities/Wall/wall";
-import { getAdjacentTiles } from "../../../utils/opposite";
+import { getAdjacentTiles } from "../../../utils/helper-functions";
 
 export function removeItem(scene: EditorScene, by: "click" | "move") {
   const { hover } = scene.main;

@@ -1,5 +1,5 @@
 import Laser from "../laser";
-import { isWithinGrace } from "../../../utils/opposite";
+import { isWithinGrace } from "../../../utils/helper-functions";
 
 export default function isTouchingPlayer(
   laser: Laser,

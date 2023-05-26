@@ -1,7 +1,10 @@
 import MainScene from "../../scenes/Main/MainScene";
-import Water from "../Water/water";
+import Water from "./water";
 import { Cardinal } from "../../types";
-import { cardinalToDirection, getAdjacentTiles } from "../../utils/opposite";
+import {
+  cardinalToDirection,
+  getAdjacentTiles,
+} from "../../utils/helper-functions";
 
 export default class Flow extends Phaser.GameObjects.Sprite {
   scene: MainScene;
@@ -199,6 +202,9 @@ export default class Flow extends Phaser.GameObjects.Sprite {
     // );
     this.scene.events.emit("Water Flowing", this.waterMap, animatingWater);
     if (!Math.floor(this.level)) this.remove();
+  }
+  split() {
+    //Create new waterflow when divided
   }
 
   merge() {

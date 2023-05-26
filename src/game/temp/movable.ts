@@ -7,7 +7,7 @@ import {
   cardinalToDirection,
   getOppositeDirection,
   directionToAdjacent,
-} from "../utils/opposite";
+} from "../utils/helper-functions";
 import MainScene from "../scenes/MainScene";
 import Laser from "./laser";
 import { connected } from "process";

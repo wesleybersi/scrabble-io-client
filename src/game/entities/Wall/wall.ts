@@ -1,6 +1,6 @@
 import MainScene from "../../scenes/Main/MainScene";
 import { Direction } from "../../types";
-import { getAdjacentTiles } from "../../utils/opposite";
+import { getAdjacentTiles } from "../../utils/helper-functions";
 
 export default class Wall extends Phaser.GameObjects.Sprite {
   scene: MainScene;
@@ -106,7 +106,8 @@ export default class Wall extends Phaser.GameObjects.Sprite {
     this.scene.add.existing(this);
   }
 
-  isCollide(): boolean {
+  isCollide(direction: Direction, floor: number): boolean {
+    // if (this.collidesOn) return false;
     return false;
   }
   generateShadow() {
@@ -275,7 +276,12 @@ export default class Wall extends Phaser.GameObjects.Sprite {
 
     this.generateShadow();
   }
-  isColliding(direction: Direction): boolean {
+  isTraversable(floor: number): boolean {
+    if (floor === Math.max(...this.collidesOn) + 1) return true;
+    return false;
+  }
+  isColliding(direction: Direction, floor: number): boolean {
+    if (!this.collidesOn.includes(floor)) return false;
     if (direction === "up" && this.collideDown) return true;
     else if (direction === "down" && this.collideUp) return true;
     else if (direction === "left" && this.collideLeft) return true;

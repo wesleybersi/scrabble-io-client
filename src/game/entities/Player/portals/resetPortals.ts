@@ -1,5 +1,5 @@
 import { Player } from "../player";
-import { getOppositeSide } from "../../../utils/opposite";
+import { getOppositeSide } from "../../../utils/helper-functions";
 
 export default function resetPortals(player: Player) {
   const { portals, allCrates } = player.scene;

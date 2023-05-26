@@ -1,6 +1,6 @@
 import MainScene from "../../scenes/Main/MainScene";
 import { Cardinal, Direction } from "../../types";
-import { getOppositeSide } from "../../utils/opposite";
+import { getOppositeSide } from "../../utils/helper-functions";
 import { allCardinalsUndefined } from "../../utils/constants";
 import prepareMovement from "./movement/prepare-movement";
 import makeMove from "./movement/make-move";
@@ -15,9 +15,17 @@ class Crate extends Phaser.GameObjects.Sprite {
   floor = 0;
   stringValue = "";
   isResetToOrigin = false;
+  hasInteraction = true;
   isMoving = false;
   isFalling = false;
-  crateType!: "Wood" | "Metal" | "Deflector" | "Explosive" | "Nuke" | "Key";
+  crateType!:
+    | "Wood"
+    | "Metal"
+    | "Explosive"
+    | "Pillar"
+    | "Pillar Horizontal"
+    | "Pillar Vertical"
+    | "Pillar Diagonal";
   item: "Key" | "None" = "None";
   direction!: Direction;
   weight = 1;
@@ -65,14 +73,21 @@ class Crate extends Phaser.GameObjects.Sprite {
     to: { row: number; col: number };
   } | null;
   isBlockingLaser: Map<string, Laser> = new Map();
+  collidesOn: number[] = [];
   constructor(
     scene: MainScene,
-    crateType: "Wood" | "Metal" | "Deflector" | "Explosive" | "Nuke",
-    frame: { row: number; col: number },
+    crateType:
+      | "Wood"
+      | "Metal"
+      | "Explosive"
+      | "Pillar"
+      | "Pillar Horizontal"
+      | "Pillar Vertical"
+      | "Pillar Diagonal",
+    frame: { texture: string; row: number; col: number },
     row: number,
     col: number,
-    floor: number,
-    connectBlocks: boolean
+    floor: number
   ) {
     super(
       scene as MainScene,
@@ -81,7 +96,7 @@ class Crate extends Phaser.GameObjects.Sprite {
         scene.cellHeight / 2 -
         8 -
         floor * scene.floorHeight,
-      "crates",
+      frame.texture,
       frame.row * 5 + frame.col
     );
     this.scene = scene;
@@ -91,6 +106,7 @@ class Crate extends Phaser.GameObjects.Sprite {
     this.row = row;
     this.col = col;
     this.floor = floor;
+    this.collidesOn.push(floor);
     this.origin = {
       row,
       col,
@@ -124,9 +140,7 @@ class Crate extends Phaser.GameObjects.Sprite {
     const { allCrates } = this.scene;
     allCrates[floor].set(`${row},${col}`, this);
 
-    if (connectBlocks) {
-      this.connectShape();
-    }
+    this.update();
 
     this.scene.add.existing(this);
 
@@ -138,7 +152,6 @@ class Crate extends Phaser.GameObjects.Sprite {
       col,
       x: this.x,
       y: this.y,
-      connectBlocks,
     });
 
     console.log(
@@ -176,55 +189,38 @@ class Crate extends Phaser.GameObjects.Sprite {
         this.hp = Infinity;
         this.weight = 1.5;
         break;
-      case "Deflector":
+      case "Pillar":
         this.hp = Infinity;
+        this.weight = 2;
         break;
-      case "Explosive":
-        this.hp = 16;
-        break;
-      case "Nuke":
-        this.hp = 16;
-        break;
+      // case "Deflector":
+      //   this.hp = Infinity;
+      //   break;
+      // case "Explosive":
+      //   this.hp = 16;
+      //   break;
+      // case "Nuke":
+      //   this.hp = 16;
+      //   break;
     }
   }
-  connectShape(at?: "top" | "bottom" | "left" | "right") {
+  connectShape(at?: string[]) {
     //Connects all adjacent crates, or if specified, one adjacent crate.
     const shape = this.shape;
 
     for (const [side, crate] of Object.entries(this.adjacentCrates)) {
-      if (at && at !== side) continue;
+      if (at && !at.includes(side)) continue;
       if (!crate || !crate.active) continue;
       if (crate && crate.crateType !== this.crateType) continue;
       for (const part of Array.from(crate.shape)) {
         shape.add(part);
       }
+
       crate.connectedTo[getOppositeSide(side as Cardinal)] = this;
       this.connectedTo[side as Cardinal] = crate;
     }
     for (const crate of shape) {
       crate.shape = shape;
-    }
-
-    const amount = this.sheetLength;
-    let row = 0;
-    if (this.crateType === "Wood") row = 0;
-    if (this.crateType === "Metal") row = 1;
-    if (shape.size === 2) {
-      if (this.connectedTo.right) {
-        this.setFrame(row * amount + 1);
-        this.connectedTo.right.setFrame(row * amount + 2);
-      } else if (this.connectedTo.left) {
-        this.connectedTo.left.setFrame(row * amount + 1);
-        this.setFrame(row * amount + 2);
-      } else if (this.connectedTo.top) {
-        this.connectedTo.top.setFrame(row * amount + 3);
-        this.setFrame(row * amount + 4);
-      } else if (this.connectedTo.bottom) {
-        this.connectedTo.bottom.setFrame(row * amount + 4);
-        this.setFrame(row * amount + 3);
-      }
-    } else if (shape.size === 1) {
-      this.setFrame(row * amount);
     }
 
     console.log("New shape consists of", shape.size, "pieces");

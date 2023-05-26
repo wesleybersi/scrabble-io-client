@@ -45,6 +45,7 @@ export class EditorScene extends Phaser.Scene {
   };
 
   rotation: "up" | "down" | "left" | "right" = "up";
+  flip: "horizontal" | "vertical" | "none" = "none";
 
   shutdown = false;
   constructor() {
@@ -120,6 +121,11 @@ export class EditorScene extends Phaser.Scene {
           else if (this.rotation === "down") this.rotation = "left";
           else if (this.rotation === "left") this.rotation = "up";
           break;
+        case "p":
+        case "P":
+          if (this.flip === "none") this.flip = "horizontal";
+          else if (this.flip === "horizontal") this.flip = "vertical";
+          else if (this.flip === "vertical") this.flip = "none";
       }
     });
 

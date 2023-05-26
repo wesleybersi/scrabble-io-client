@@ -67,12 +67,11 @@ export default class MainScene extends Phaser.Scene {
     y: number;
     object: HoverTarget | null;
   } = { row: -1, col: -1, floor: 0, x: -1, y: -1, object: null };
+
+  //External Methods
+  preload = preload;
   constructor() {
     super({ key: "SceneA" });
-  }
-
-  preload() {
-    preload(this);
   }
 
   create() {

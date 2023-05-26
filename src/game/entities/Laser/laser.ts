@@ -4,7 +4,7 @@ import {
   cardinalToDirection,
   directionToCardinal,
   getOppositeSide,
-} from "../../utils/opposite";
+} from "../../utils/helper-functions";
 import obstructByWall from "./collision/obstruct-by-wall";
 import obstructByCrate from "./collision/obstruct-by-crate";
 import isTouchingPlayer from "./collision/player-collision";

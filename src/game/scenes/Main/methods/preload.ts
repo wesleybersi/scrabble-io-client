@@ -12,6 +12,8 @@ import spritesheetHalfWall from "../../../assets/images/spritesheets/walls-40.pn
 import spritesheetWall from "../../../assets/images/spritesheets/walls-56.png";
 import spritesheetBigWall from "../../../assets/images/spritesheets/walls-72.png";
 
+import spritesheetPillars from "../../../assets/images/spritesheets/pillars.png";
+
 import spritesheetWater from "../../../assets/images/spritesheets/water.png";
 
 import imageRampHorizontal from "../../../assets/images/spritesheets/ramp-h.png";
@@ -36,75 +38,79 @@ import sfxCreateOn from "../../../assets/audio/create-on.wav";
 import sfxCreateOff from "../../../assets/audio/create-off.wav";
 import sfxSplat from "../../../assets/audio/splat.wav";
 
-export default function preload(scene: MainScene) {
-  const { cellWidth, cellHeight } = scene;
+export default function preload(this: MainScene) {
+  const { cellWidth, cellHeight } = this;
 
-  scene.load.audio("portal-a", sfxFireBlue);
-  scene.load.audio("portal-b", sfxFireOrange);
-  scene.load.audio("remover", sfxRemover);
-  scene.load.audio("edit-mode", sfxEditMode);
-  scene.load.audio("create-on", sfxCreateOn);
-  scene.load.audio("create-off", sfxCreateOff);
-  scene.load.audio("splat", sfxSplat);
+  this.load.audio("portal-a", sfxFireBlue);
+  this.load.audio("portal-b", sfxFireOrange);
+  this.load.audio("remover", sfxRemover);
+  this.load.audio("edit-mode", sfxEditMode);
+  this.load.audio("create-on", sfxCreateOn);
+  this.load.audio("create-off", sfxCreateOff);
+  this.load.audio("splat", sfxSplat);
 
-  scene.load.image("cornerpiece", imageCornerpiece);
-  scene.load.image("entrance", imageEntrance);
-  scene.load.image("spikes", imageSpikes);
-  scene.load.image("bubble", imageBubble);
-  scene.load.image("drain", imageDrain);
+  this.load.image("cornerpiece", imageCornerpiece);
+  this.load.image("entrance", imageEntrance);
+  this.load.image("spikes", imageSpikes);
+  this.load.image("bubble", imageBubble);
+  this.load.image("drain", imageDrain);
 
   //Tilesets
-  scene.load.spritesheet("floor-tileset", tilesetFloor, {
+  this.load.spritesheet("floor-tileset", tilesetFloor, {
     frameWidth: cellWidth,
     frameHeight: cellWidth,
   });
 
   //Spritsheets
-  scene.load.spritesheet("crates", spritesheetCrates, {
+  this.load.spritesheet("crates", spritesheetCrates, {
     frameWidth: 32,
     frameHeight: 40,
   });
-  scene.load.spritesheet("ramp-horizontal", imageRampHorizontal, {
+  this.load.spritesheet("pillars", spritesheetPillars, {
+    frameWidth: 32,
+    frameHeight: 40,
+  });
+  this.load.spritesheet("ramp-horizontal", imageRampHorizontal, {
     frameWidth: 64,
     frameHeight: 40,
   });
-  scene.load.spritesheet("ramp-vertical", imageRampVertical, {
+  this.load.spritesheet("ramp-vertical", imageRampVertical, {
     frameWidth: 32,
     frameHeight: 64,
   });
 
-  scene.load.spritesheet("half-wall", spritesheetHalfWall, {
+  this.load.spritesheet("half-wall", spritesheetHalfWall, {
     frameWidth: 32,
     frameHeight: 40,
   });
-  scene.load.spritesheet("wall", spritesheetWall, {
+  this.load.spritesheet("wall", spritesheetWall, {
     frameWidth: 32,
     frameHeight: 56,
   });
-  scene.load.spritesheet("big-wall", spritesheetBigWall, {
+  this.load.spritesheet("big-wall", spritesheetBigWall, {
     frameWidth: 32,
     frameHeight: 72,
   });
 
-  scene.load.spritesheet("water", spritesheetWater, {
+  this.load.spritesheet("water", spritesheetWater, {
     frameWidth: 32,
     frameHeight: 24,
   });
 
-  scene.load.spritesheet("player", spritesheetPlayer, {
+  this.load.spritesheet("player", spritesheetPlayer, {
     frameWidth: 32,
     frameHeight: 48,
   });
 
-  scene.load.spritesheet("explosion", spritesheetExplosion, {
+  this.load.spritesheet("explosion", spritesheetExplosion, {
     frameWidth: cellWidth,
     frameHeight: cellHeight,
   });
-  scene.load.spritesheet("cracks", spritesheetCracks, {
+  this.load.spritesheet("cracks", spritesheetCracks, {
     frameWidth: cellWidth,
     frameHeight: cellHeight,
   });
-  scene.load.spritesheet("oil", spritesheetOil, {
+  this.load.spritesheet("oil", spritesheetOil, {
     frameWidth: cellHeight,
     frameHeight: cellHeight,
   });

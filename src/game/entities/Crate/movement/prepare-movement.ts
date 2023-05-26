@@ -3,7 +3,7 @@ import Crate from "../crate";
 import {
   directionToAdjacent,
   directionToCardinal,
-} from "../../../utils/opposite";
+} from "../../../utils/helper-functions";
 
 export default function prepareMovement(
   crate: Crate,
@@ -15,7 +15,7 @@ export default function prepareMovement(
   abort: boolean;
   enteringPortal?: Crate;
 } {
-  const { allWalls, allRamps, allCrates } = crate.scene;
+  const { allWalls, allRamps } = crate.scene;
 
   let aborted = false;
   const { row: targetRow, col: targetCol } = directionToAdjacent(
@@ -25,18 +25,17 @@ export default function prepareMovement(
   );
   const position = `${targetRow},${targetCol}`;
   const targetWall = allWalls.get(position);
+  const targetRamp = allRamps[crate.floor].get(position);
 
-  movingSet.add(crate);
   visitedSet.add(crate);
-
   if (
-    targetWall &&
-    targetWall.collidesOn.includes(crate.floor) &&
-    // Math.max(...targetWall.collidesOn) === crate.floor &&
-    targetWall.isColliding(direction)
+    crate.isFalling ||
+    targetRamp ||
+    (targetWall && targetWall.isColliding(direction, crate.floor))
   ) {
     aborted = true;
   }
+  movingSet.add(crate);
 
   for (const [side, adjacentCrate] of Object.entries(crate.adjacentCrates)) {
     if (aborted) break;
@@ -50,14 +49,14 @@ export default function prepareMovement(
       !crate.connectedTo[side as Cardinal] &&
       directionToCardinal(direction as Direction) !== side &&
       side !== "above"
-    )
+    ) {
       continue;
-
-    movingSet.add(adjacentCrate);
+    }
 
     if (visitedSet.has(adjacentCrate)) {
       continue;
     }
+    movingSet.add(adjacentCrate);
     aborted = prepareMovement(
       adjacentCrate,
       direction,

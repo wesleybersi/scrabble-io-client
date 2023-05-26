@@ -1,6 +1,6 @@
 import MainScene from "../scenes/Main/MainScene";
 import Flow from "./WaterFlow/Flow";
-import Water from "./Water/water";
+import Water from "./WaterFlow/water";
 
 export default class Drain extends Phaser.GameObjects.Sprite {
   scene: MainScene;

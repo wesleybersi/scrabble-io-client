@@ -1,7 +1,7 @@
 import Portal from "../../portal";
 import { Player } from "../player";
 import { Cardinal, Direction } from "../../../types";
-import { cardinalToDirection } from "../../../utils/opposite";
+import { cardinalToDirection } from "../../../utils/helper-functions";
 import MainScene from "../../../scenes/MainScene";
 import { Clone } from "../clone";
 

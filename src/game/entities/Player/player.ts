@@ -7,7 +7,7 @@ import {
   cardinalToDirection,
   directionToCardinal,
   getOppositeDirection,
-} from "../../utils/opposite";
+} from "../../utils/helper-functions";
 import { allCardinalsNull, allDirectionsFalse } from "../../utils/constants";
 import resetPortals from "./portals/resetPortals";
 import { portalRemoved } from "./portals/resetPortals";

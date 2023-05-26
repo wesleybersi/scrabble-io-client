@@ -3,7 +3,7 @@ import { Player } from "../player";
 import { isObstructed } from "./collision";
 import tweenToTile from "./tween-to-tile";
 import { allDirectionsFalse } from "../../../utils/constants";
-import { directionToAdjacent } from "../../../utils/opposite";
+import { directionToAdjacent } from "../../../utils/helper-functions";
 
 export default function handleMovement(this: Player) {
   if (this.state !== "Idle" && this.state !== "Holding") {

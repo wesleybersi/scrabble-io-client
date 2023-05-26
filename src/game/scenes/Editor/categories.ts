@@ -80,6 +80,30 @@ const allCategories: { walls: Category; floor: Category; objects: Category } = {
         image: "crates",
         frame: 5,
       },
+      {
+        name: "Pillar",
+        description: [],
+        image: "pillars",
+        frame: 0,
+      },
+      {
+        name: "Pillar Horizontal",
+        description: [],
+        image: "pillars",
+        frame: 1,
+      },
+      {
+        name: "Pillar Vertical",
+        description: [],
+        image: "pillars",
+        frame: 2,
+      },
+      {
+        name: "Pillar Diagonal",
+        description: [],
+        image: "pillars",
+        frame: 3,
+      },
     ],
   },
 };

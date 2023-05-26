@@ -9,7 +9,8 @@ import Ramp from "../../../entities/ramp";
 export function placeItem(
   scene: EditorScene,
   item: Item,
-  by: "click" | "move"
+  by: "click" | "move",
+  size?: number
 ) {
   console.log("Placing", item.name, "by", by);
 
@@ -111,7 +112,7 @@ export function placeItem(
         let placeRow = hover.row;
         let placeCol = hover.col;
         let crateType: "Wood" | "Metal" = "Wood";
-        const frame = { row: 0, col: 0 };
+        const frame = { texture: "crates", row: 0, col: 0 };
         if (item.name === "Metal Crate") {
           crateType = "Metal";
           frame.row++;
@@ -135,17 +136,106 @@ export function placeItem(
         if (allCrates[floorPlacement].has(`${placeRow},${placeCol}`)) return;
         if (player.row === placeRow && player.col === placeCol) return;
         if (hover.object && by !== "click") return;
-        new Crate(
-          main,
-          crateType,
-          frame,
-          placeRow,
-          placeCol,
-          floorPlacement,
-          false
-          // this.buttons.shift //Hold CMD to connect blocks
-        );
+        new Crate(main, crateType, frame, placeRow, placeCol, floorPlacement);
       }
       break;
+    case "Pillar":
+    case "Pillar Horizontal":
+    case "Pillar Vertical":
+    case "Pillar Diagonal": {
+      const { allCrates } = main;
+      let placeFloor = 0;
+      let placeRow = hover.row;
+      let placeCol = hover.col;
+      if (hover.object) {
+        if (
+          hover.object instanceof Crate &&
+          hover.object.floor <= main.maxFloor &&
+          !hover.object.adjacentCrates.above
+        ) {
+          placeFloor += hover.object.floor + 1;
+          placeRow = hover.object.row;
+          placeCol = hover.object.col;
+        } else if (hover.object instanceof Wall) {
+          placeFloor = Math.max(...hover.object.collidesOn) + 1;
+          placeRow = hover.object.row;
+          placeCol = hover.object.col;
+        } else return;
+      }
+
+      if (allCrates[placeFloor].has(`${placeRow},${placeCol}`)) return;
+      if (player.row === placeRow && player.col === placeCol) return;
+      if (hover.object && by !== "click") return;
+
+      const createPillar = (size: number) => {
+        const piece = {
+          frame: { texture: "pillars", row: 0, col: 0 },
+          row: 0,
+          col: 0,
+          floor: 0,
+        };
+        const pillar = Array(size)
+          .fill(undefined)
+          .map(() => ({ ...piece }));
+
+        const createdPieces: Crate[] = [];
+        pillar.forEach((piece, index) => {
+          console.count("ping?");
+          if (index === 0) {
+            piece.frame.row = 2;
+            piece.frame.col = 0;
+          } else if (index === 1) {
+            piece.frame.row = 1;
+            piece.frame.col = 1;
+          } else if (index === size - 1) {
+            piece.frame.row = 0;
+            if (item.name === "Pillar Horizontal") piece.frame.col = 1;
+            else if (item.name === "Pillar Vertical") piece.frame.col = 2;
+            else if (item.name === "Pillar Diagonal") piece.frame.col = 3;
+            else if (item.name === "Pillar") piece.frame.col = 0;
+          } else {
+            piece.frame.row = 1;
+            piece.frame.col = 0;
+          }
+          let crateType:
+            | "Pillar"
+            | "Pillar Horizontal"
+            | "Pillar Vertical"
+            | "Pillar Diagonal" = "Pillar";
+          if (item.name === "Pillar Horizotnal")
+            crateType = "Pillar Horizontal";
+          if (item.name === "Pillar Horizotnal") crateType = "Pillar Vertical";
+          if (item.name === "Pillar Diaongal") crateType = "Pillar Diagonal";
+
+          piece.row = placeRow;
+          piece.col = placeCol;
+          piece.floor = placeFloor + index;
+          createdPieces.push(
+            new Crate(
+              main,
+              crateType,
+              piece.frame,
+              piece.row,
+              piece.col,
+              piece.floor
+            )
+          );
+        });
+        createdPieces.forEach((piece, index) => {
+          if (index === 0) {
+            piece.connectShape(["above"]);
+          } else if (index > 0 && index < size - 1) {
+            piece.connectShape(["above", "below"]);
+            piece.hasInteraction = false;
+            piece.shadow.destroy();
+          } else if (index === size - 1) {
+            piece.connectShape(["below"]);
+            piece.hasInteraction = false;
+            piece.shadow.destroy();
+          }
+        });
+      };
+      createPillar(4);
+    }
   }
 }

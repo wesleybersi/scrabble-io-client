@@ -8,7 +8,7 @@ import Wall from "./Wall/wall";
 import Ramp from "./ramp";
 import Drain from "./drain";
 import Flow from "./WaterFlow/Flow";
-import { getAdjacentTiles } from "../utils/opposite";
+import { getAdjacentTiles } from "../utils/helper-functions";
 
 class Editor extends Phaser.GameObjects.Graphics {
   scene: MainScene;

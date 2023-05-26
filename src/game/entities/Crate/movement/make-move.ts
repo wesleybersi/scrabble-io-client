@@ -3,7 +3,7 @@ import Crate from "../crate";
 import {
   directionToCardinal,
   getOppositeDirection,
-} from "../../../utils/opposite";
+} from "../../../utils/helper-functions";
 
 export default function makeMove(
   crate: Crate,
@@ -111,29 +111,32 @@ export function moveComplete(crate: Crate) {
   console.log(allCrates);
 
   const ease = crate.floor > 1 ? "Linear" : "Quad";
+  //FIXME
   function fallingCrate() {
     if (crate.floor > 0) {
       const oppositeSide = directionToCardinal(
         getOppositeDirection(crate.direction)
       );
 
-      //TODO If not all of shape, none of shape
       if (crate.connectedTo[oppositeSide]) return;
 
       const wall = allWalls.get(`${crate.row},${crate.col}`);
-      const otherCrate = allCrates[crate.floor - 1].get(
+      const crateBelow = allCrates[crate.floor - 1].get(
         `${crate.row},${crate.col}`
       );
 
       if (
         (!wall || (wall && Math.max(...wall.collidesOn) + 1 < crate.floor)) &&
-        !otherCrate
+        !crateBelow
       ) {
         const { cellHeight } = crate.scene;
-        allCrates[crate.floor].delete(`${crate.row},${crate.col}`);
+
+        const pos = `${crate.row},${crate.col}`;
+        allCrates[crate.floor].delete(pos);
+
         crate.isFalling = true;
 
-        const tween = crate.scene.tweens.add({
+        crate.scene.tweens.add({
           targets: [crate],
           y: crate.y + cellHeight - 8,
           duration: 250 / crate.weight,
@@ -144,8 +147,8 @@ export function moveComplete(crate: Crate) {
           onComplete: () => {
             crate.floor--;
             allCrates[crate.floor].set(`${crate.row},${crate.col}`, crate);
-            crate.update();
 
+            crate.update();
             fallingCrate();
             crate.isFalling = false;
             return;
