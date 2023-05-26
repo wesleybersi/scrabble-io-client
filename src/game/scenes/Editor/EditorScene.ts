@@ -43,17 +43,19 @@ export class EditorScene extends Phaser.Scene {
     meta: false,
     shift: false,
   };
+
   rotation: "up" | "down" | "left" | "right" = "up";
+
   shutdown = false;
   constructor() {
     super({ key: "Editor" });
   }
 
   create(main: MainScene) {
+    main.player.resetToOrigin();
     this.sound.play("create-on");
     this.main = main;
-
-    main.player.resetToOrigin();
+    main.cameras.main.zoom = main.editorZoomLevel;
 
     this.sidebar = this.add.container(-this.sidebarWidth, 0);
     drawSidebar(this);
@@ -83,37 +85,25 @@ export class EditorScene extends Phaser.Scene {
         case "w":
         case "ArrowUp":
           player.place(player.x, (player.y -= cellHeight));
-          player.origin = {
-            row: Math.floor(player.y / cellHeight),
-            col: Math.floor(player.x / cellWidth),
-          };
+          main.start.row--;
           break;
         case "S":
         case "s":
         case "ArrowDown":
           player.place(player.x, (player.y += cellHeight));
-          player.origin = {
-            row: Math.floor(player.y / cellHeight),
-            col: Math.floor(player.x / cellWidth),
-          };
+          main.start.row++;
           break;
         case "A":
         case "a":
         case "ArrowLeft":
           player.place((player.x -= cellWidth), player.y);
-          player.origin = {
-            row: Math.floor(player.y / cellHeight),
-            col: Math.floor(player.x / cellWidth),
-          };
+          main.start.col--;
           break;
         case "D":
         case "d":
         case "ArrowRight":
           player.place((player.x += cellWidth), player.y);
-          player.origin = {
-            row: Math.floor(player.y / cellHeight),
-            col: Math.floor(player.x / cellWidth),
-          };
+          main.start.col++;
           break;
 
         //Special keys
@@ -131,64 +121,80 @@ export class EditorScene extends Phaser.Scene {
           else if (this.rotation === "left") this.rotation = "up";
           break;
       }
+    });
 
-      this.input.keyboard?.on("keyup", (event: KeyboardEvent) => {
-        switch (event.key) {
-          case "Meta":
-            this.buttons.meta = false;
-            break;
-          case "Shift":
-            this.buttons.shift = false;
-            break;
+    this.input.keyboard?.on("keyup", (event: KeyboardEvent) => {
+      switch (event.key) {
+        case "Meta":
+          this.buttons.meta = false;
+          break;
+        case "Shift":
+          this.buttons.shift = false;
+          break;
+      }
+    });
+
+    //ANCHOR Mouse events
+    this.input.mouse?.disableContextMenu();
+    this.input.on("pointermove", (pointer: Phaser.Input.Pointer) => {
+      const { buttons } = this;
+      if (this.sidebarIsOpen && pointer.worldX <= this.sidebarWidth) return;
+      if (pointer.leftButtonDown() && !pointer.rightButtonDown()) {
+        if (buttons.meta) removeItem(this, "move");
+        else if (this.selectedItem) placeItem(this, this.selectedItem, "move");
+      }
+    });
+
+    this.input.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
+      const { buttons } = this;
+      const { hover } = main;
+      if (this.sidebarIsOpen && pointer.worldX <= this.sidebarWidth) return;
+      if (pointer.leftButtonDown() && !pointer.rightButtonDown()) {
+        if (buttons.meta) removeItem(this, "click");
+        else if (this.selectedItem) {
+          placeItem(this, this.selectedItem, "click");
         }
-      });
+      } else if (!pointer.leftButtonDown() && pointer.rightButtonDown()) {
+        if (hover.object) copyItem(this, hover.object);
+      }
+      //TODO Shift ? Start selection
+    });
 
-      //ANCHOR Mouse events
-      this.input.mouse?.disableContextMenu();
-      this.input.on("pointermove", (pointer: Phaser.Input.Pointer) => {
-        const { buttons } = this;
-        if (pointer.worldX <= this.sidebarWidth) return;
-        if (pointer.leftButtonDown() && !pointer.rightButtonDown()) {
-          if (buttons.meta) removeItem(this);
-          else if (this.selectedItem)
-            placeItem(this, this.selectedItem, "move");
+    this.input.on("pointerup", (pointer: Phaser.Input.Pointer) => {
+      //TODO !Shift ? End selection
+    });
+
+    //ANCHOR Resize events
+    this.scale.on("resize", (gameSize: Phaser.Structs.Size) => {
+      this.sidebarHeight = gameSize.height;
+      drawSidebar(this, true);
+    });
+
+    //TODO Move to editor?
+    this.input.on("wheel", (pointer: Phaser.Input.Pointer) => {
+      const camera = main.cameras.main;
+      if (pointer.deltaY < 0) {
+        if (main.editorZoomLevel < 5) {
+          main.editorZoomLevel += 1;
+          camera.zoom = main.editorZoomLevel;
         }
-      });
-
-      this.input.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
-        const { buttons } = this;
-        const { hover } = main;
-        if (pointer.worldX <= this.sidebarWidth) return;
-        if (pointer.leftButtonDown() && !pointer.rightButtonDown()) {
-          if (buttons.meta) removeItem(this);
-          else if (this.selectedItem) {
-            placeItem(this, this.selectedItem, "click");
-          }
-        } else if (!pointer.leftButtonDown() && pointer.rightButtonDown()) {
-          if (hover.object) copyItem(this, hover.object);
+      } else if (pointer.deltaY > 0) {
+        if (main.editorZoomLevel > 1) {
+          main.editorZoomLevel -= 1;
+          camera.zoom = main.editorZoomLevel;
         }
-        //TODO Shift ? Start selection
-      });
+      }
+    });
 
-      this.input.on("pointerup", (pointer: Phaser.Input.Pointer) => {
-        //TODO !Shift ? End selection
-      });
-
-      //ANCHOR Resize events
-      this.scale.on("resize", (gameSize: Phaser.Structs.Size) => {
-        this.sidebarHeight = gameSize.height;
-        drawSidebar(this, true);
-      });
-
-      //ANCHOR Custom pointer events
-      main.events.on("Pointing at", (object: HoverTarget) => {
-        main.hover.object = object;
-      });
-      main.events.on("No longer pointing at", (object: HoverTarget) => {
-        if (main.hover.object === object) main.hover.object = null;
-      });
+    //ANCHOR Custom pointer events
+    main.events.on("Pointing at", (object: HoverTarget) => {
+      main.hover.object = object;
+    });
+    main.events.on("Remove from pointer", (object: HoverTarget) => {
+      if (main.hover.object === object) main.hover.object = null;
     });
   }
+
   update() {
     if (this.main.mode === "Play" && !this.shutdown) {
       this.shutdown = true;
@@ -201,6 +207,9 @@ export class EditorScene extends Phaser.Scene {
       return;
     }
     this.canvasHeight = window.innerHeight;
+
+    //Update player start based on input
+    this.main.start.update();
 
     const camera = this.cameras.main;
 

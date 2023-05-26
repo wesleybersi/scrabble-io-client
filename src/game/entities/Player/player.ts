@@ -1,8 +1,6 @@
 import Portal from "../portal";
-import Wall from "../wall";
-
+import Wall from "../Wall/wall";
 import MainScene from "../../scenes/Main/MainScene";
-// import placePortal from "./portals/placePortal";
 import { Clone } from "./clone";
 import { Cardinal, Direction } from "../../types";
 import {
@@ -10,12 +8,10 @@ import {
   directionToCardinal,
   getOppositeDirection,
 } from "../../utils/opposite";
-import { allCardinalsNull } from "../../utils/constants";
+import { allCardinalsNull, allDirectionsFalse } from "../../utils/constants";
 import resetPortals from "./portals/resetPortals";
 import { portalRemoved } from "./portals/resetPortals";
 import Crate from "../Crate/crate";
-import { allDirectionsFalse } from "../../utils/constants";
-import Entrance from "./entrance";
 
 //Methods
 import handleMovement from "./movement/move";
@@ -48,8 +44,6 @@ export class Player extends Phaser.GameObjects.Sprite {
     | "Editing" = "Idle";
   row: number;
   col: number;
-  origin: { row: number; col: number };
-  startTile: Entrance;
   portalClone!: Clone | null;
   portalReflection!: {
     clone: Clone | null;
@@ -75,20 +69,26 @@ export class Player extends Phaser.GameObjects.Sprite {
   };
   facing: "up" | "down" | "left" | "right" = "up";
   isSliding = false;
-  isOily = false;
-  spiked = false;
-  deadCounter = 0;
-  constructor(scene: MainScene, x: number, y: number) {
-    super(scene as MainScene, x, y, "player", 0);
+
+  //External methods:
+  move = handleMovement;
+  constructor(scene: MainScene) {
+    super(
+      scene as MainScene,
+      scene.start.col * scene.cellWidth + scene.cellWidth / 2,
+      scene.start.row * scene.cellHeight -
+        scene.start.floor * scene.floorHeight,
+      "player",
+      0
+    );
     this.scene = scene;
     this.name = "Player";
     this.portalClone = null;
     this.portalReflection = null;
-    this.row = Math.floor(y - scene.cellHeight / 2 + this.z) / scene.cellHeight;
-    this.col = Math.floor(x - scene.cellWidth / 2) / scene.cellWidth;
-    this.y -= scene.cellHeight / 2;
-    this.startTile = new Entrance(scene, this.row, this.col);
-    this.origin = { row: this.row, col: this.col };
+    this.row = scene.start.row;
+    this.col = scene.start.col;
+    this.floor = scene.start.floor;
+    this.z = scene.start.floor * scene.floorHeight;
     this.holding = { top: null, right: null, bottom: null, left: null };
     this.adjacentTiles = {
       top: { row: this.row - 1, col: this.col },
@@ -349,11 +349,6 @@ export class Player extends Phaser.GameObjects.Sprite {
       });
     }
   }
-
-  move() {
-    handleMovement(this);
-  }
-
   place(x: number, y: number) {
     this.row = Math.floor(y) / this.scene.cellHeight;
     this.col = Math.floor(x - this.scene.cellWidth / 2) / this.scene.cellWidth;
@@ -370,18 +365,24 @@ export class Player extends Phaser.GameObjects.Sprite {
   }
 
   resetToOrigin() {
-    const { cellWidth, cellHeight } = this.scene;
-
-    this.x = this.origin.col * cellWidth + cellWidth / 2;
-    this.y = this.origin.row * cellHeight + cellHeight / 2;
-    this.y -= cellHeight / 2;
-    this.row = this.origin.row;
-    this.col = this.origin.col;
+    const { cellWidth, cellHeight, floorHeight, start } = this.scene;
 
     this.holding = Object.assign({}, allCardinalsNull);
     this.moving = Object.assign({}, allDirectionsFalse);
     this.forceMovement = Object.assign({}, allDirectionsFalse);
     this.state = "Idle";
+
+    this.z = 0;
+    this.floor = 0;
+
+    //TODO Snap to floors as well
+    this.x = start.col * cellWidth + cellWidth / 2;
+    this.y = start.row * cellHeight;
+    this.z = start.z;
+
+    this.row = start.row;
+    this.col = start.col;
+    this.floor = start.floor;
   }
 
   update() {
@@ -411,7 +412,6 @@ export class Player extends Phaser.GameObjects.Sprite {
     switch (this.state) {
       case "Idle":
         {
-          this.deadCounter = 0;
           this.alpha = 1;
           this.scene.game.canvas.style.cursor = "auto";
           this.shadow.anims.pause();
@@ -452,11 +452,7 @@ export class Player extends Phaser.GameObjects.Sprite {
       case "Dead":
         console.warn("YOU FUCKING DIED");
         this.anims.play("Idle");
-        this.deadCounter++;
-        if (this.deadCounter > 200) {
-          this.resetToOrigin();
-        }
-
+        this.resetToOrigin();
         return;
       case "Editing":
         this.z = 0;
@@ -465,17 +461,7 @@ export class Player extends Phaser.GameObjects.Sprite {
         this.anims.play("Idle");
         this.alpha = 0.65;
         this.setDepth(200);
-
         break;
-    }
-
-    if (
-      this.startTile.row !== this.origin.row ||
-      this.startTile.col !== this.origin.col
-    ) {
-      this.startTile.row = this.origin.row;
-      this.startTile.col = this.origin.col;
-      this.startTile.draw();
     }
 
     for (const [side, holding] of Object.entries(this.holding)) {

@@ -23,7 +23,7 @@ export const drawCategoryTabs = (scene: EditorScene) => {
   const amount = Object.keys(scene.allCategories).length;
 
   if (scene.categoryTabs) scene.categoryTabs.destroy();
-  scene.categoryTabs = scene.add.container(0, 0);
+  scene.categoryTabs = scene.add.container(0, 40);
 
   const tabConfig = {
     amount, // Number of columns
@@ -97,15 +97,18 @@ export function drawItemGrid(scene: EditorScene) {
   if (!category) return;
 
   for (let i = 0; i < category.items.length; i++) {
-    const item = scene.add.image(0, 0, category.items[i].image, 0);
-    item.setOrigin(0.5, 0.5);
+    const { image, frame } = category.items[i];
+    const item = scene.add.image(0, 0, image, frame);
+    item.setOrigin(0.5, 1);
     item.setInteractive();
 
     // Calculate the position of the grid item based on the row and column
     const row = Math.floor(i / gridConfig.columns);
     const col = i % gridConfig.columns;
     const x = col * (gridConfig.itemWidth + gridConfig.paddingX);
-    const y = row * (gridConfig.itemHeight + gridConfig.paddingY);
+    const y =
+      row * (gridConfig.itemHeight + gridConfig.paddingY) +
+      gridConfig.itemHeight / 2;
 
     // Set the position of the grid item within the container
     item.setPosition(x, y);
@@ -155,7 +158,7 @@ export function inOut(scene: EditorScene) {
   const { sidebarWidth } = scene;
   const tween = scene.tweens.add({
     targets: [scene.sidebar],
-    duration: 400,
+    duration: 250,
     ease: "Sine.Out",
     x: scene.sidebarIsOpen ? -sidebarWidth : 0,
     alpha: scene.sidebarIsOpen ? 0.5 : 1,

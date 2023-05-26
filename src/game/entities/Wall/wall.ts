@@ -1,5 +1,6 @@
-import MainScene from "../scenes/Main/MainScene";
-import { Direction } from "../types";
+import MainScene from "../../scenes/Main/MainScene";
+import { Direction } from "../../types";
+import { getAdjacentTiles } from "../../utils/opposite";
 
 export default class Wall extends Phaser.GameObjects.Sprite {
   scene: MainScene;
@@ -88,22 +89,26 @@ export default class Wall extends Phaser.GameObjects.Sprite {
       this.scene.events.emit("Pointing at", this);
     });
     this.on("pointerout", () => {
-      this.scene.events.emit("No longer pointing at", this);
+      this.scene.events.emit("Remove from pointer", this);
+    });
+
+    scene.allWalls.set(`${row},${col}`, this);
+
+    scene.events.on("Connect Walls", (row: number, col: number) => {
+      if (this.row === row && this.col === col) this.update();
     });
 
     this.update();
-    scene.allWalls.set(`${row},${col}`, this);
-
-    scene.events.on("Walls Updated", () => {
-      console.log("Update");
-      this.update();
-    });
-
-    this.scene.events.emit("Walls Updated");
-
+    const adjacent = getAdjacentTiles(this.row, this.col);
+    for (const [side, position] of Object.entries(adjacent)) {
+      this.scene.events.emit("Connect Walls", position.row, position.col);
+    }
     this.scene.add.existing(this);
   }
 
+  isCollide(): boolean {
+    return false;
+  }
   generateShadow() {
     if (this.connectedTo.bottom) {
       this.shadow.alpha = 0;
@@ -287,8 +292,9 @@ export default class Wall extends Phaser.GameObjects.Sprite {
 
   remove() {
     //Can only be removed in editor
-    this.setActive(false);
     if (!this.scene) return;
+    this.setActive(false);
+    this.scene.events.emit("Remove from pointer", this);
     const { allWalls, allCrates } = this.scene;
 
     for (const [pos, wall] of allWalls) {

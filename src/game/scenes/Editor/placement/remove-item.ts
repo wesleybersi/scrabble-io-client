@@ -1,22 +1,20 @@
 import { EditorScene } from "../EditorScene";
-import { Item } from "../categories";
+import Wall from "../../../entities/Wall/wall";
+import { getAdjacentTiles } from "../../../utils/opposite";
 
-export function removeItem(scene: EditorScene) {
-  console.log("Removing");
+export function removeItem(scene: EditorScene, by: "click" | "move") {
+  const { hover } = scene.main;
 
-  const { main } = scene;
-  const { allWalls, hover } = main;
+  if (!hover.object) return;
+  const wasWall = hover.object instanceof Wall;
+  const position = { row: hover.object?.row, col: hover.object.col };
 
-  let pos = "";
-  if (hover.object) {
-    pos = `${hover.object.row},${hover.object.col}`;
-  } else {
-    pos = `${hover.row},${hover.col}`;
-  }
+  hover.object.remove();
 
-  const wall = allWalls.get(pos);
-  if (wall) {
-    wall.remove();
-    main.events.emit("Walls Updated");
+  if (wasWall) {
+    const adjacent = getAdjacentTiles(position.row, position.col);
+    for (const [side, position] of Object.entries(adjacent)) {
+      scene.main.events.emit("Connect Walls", position.row, position.col);
+    }
   }
 }

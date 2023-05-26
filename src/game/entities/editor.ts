@@ -4,7 +4,7 @@ import { Cardinal, Direction } from "../types";
 import { Player } from "./Player/player";
 import Laser from "./Laser/laser";
 import Crate from "./Crate/crate";
-import Wall from "./wall";
+import Wall from "./Wall/wall";
 import Ramp from "./ramp";
 import Drain from "./drain";
 import Flow from "./WaterFlow/Flow";

@@ -1,12 +1,13 @@
 import Phaser from "phaser";
 import { Player } from "../../entities/Player/player";
 import Portal from "../../entities/portal";
+import Start from "../../entities/start-tile";
 
 import Crate from "../../entities/Crate/crate";
-import Wall from "../../entities/wall";
+import Wall from "../../entities/Wall/wall";
 import Ramp from "../../entities/ramp";
 import Flow from "../../entities/WaterFlow/Flow";
-import Water from "../../entities/Water/water";
+
 import { HoverTarget } from "../../types";
 import preload from "./methods/preload";
 
@@ -24,6 +25,7 @@ export default class MainScene extends Phaser.Scene {
   floorHeight = 16;
   maxFloor = 8;
   shadowOffset = { x: 0, y: 16 };
+  start!: Start;
   player!: Player;
   pirates = [];
   gameState: { crates: string } = { crates: "" };
@@ -32,7 +34,7 @@ export default class MainScene extends Phaser.Scene {
   allCrates: Array<Map<string, Crate>> = Array.from(
     { length: this.maxFloor },
     () => new Map<string, Crate>()
-  ); //Each index of the array represents a floor.
+  );
   allWalls: Map<string, Wall> = new Map();
   allRamps: Array<Map<string, Ramp>> = Array.from(
     { length: this.maxFloor },
@@ -42,11 +44,7 @@ export default class MainScene extends Phaser.Scene {
   allWaterFlows: Array<Map<string, Flow>> = Array.from(
     { length: this.maxFloor },
     () => new Map<string, Flow>()
-  ); //Each index of the array represents a floor.
-  allWater: Array<Map<string, Water>> = Array.from(
-    { length: this.maxFloor },
-    () => new Map<string, Water>()
-  ); //Each index of the array represents a floor.
+  );
 
   allLasers: Map<string, Laser> = new Map();
   allObjects: Map<string, Crate> = new Map();
@@ -59,7 +57,8 @@ export default class MainScene extends Phaser.Scene {
   frameCounter = 0;
   baseLayer!: Phaser.Tilemaps.TilemapLayer | null;
   tilemap!: BasicTilemap;
-  gameZoomLevel = 2;
+  playZoomLevel = 3;
+  editorZoomLevel = 2;
   hover: {
     row: number;
     col: number;
@@ -87,16 +86,20 @@ export default class MainScene extends Phaser.Scene {
     this.sound.add("edit-mode");
     this.sound.add("splat");
 
+    // Phaser.GameObjects.GameObject.prototype.customMethod = customMethod;
+
     this.portals = { a: null, b: null };
 
-    const playerX = (this.colCount / 2) * this.cellWidth + this.cellWidth / 2;
-    const playerY = (this.rowCount / 2) * this.cellHeight + this.cellHeight / 2;
-    this.player = new Player(this, playerX, playerY);
+    const startCol = Math.floor(this.colCount / 2);
+    const startRow = Math.floor(this.rowCount / 2);
+    const startFloor = 0;
+    this.start = new Start(this, startCol, startRow, startFloor);
+    this.player = new Player(this);
 
     const camera = this.cameras.main;
 
     camera.setBounds(0, 0, worldWidth, worldHeight);
-    camera.zoom = this.gameZoomLevel;
+    camera.zoom = this.playZoomLevel;
 
     // camera.setDeadzone(camera.worldView.width / camera.zoom, camera.worldView.height / camera.zoom);
     camera.startFollow(this.player, true, 0.1, 0.1);
@@ -128,23 +131,6 @@ export default class MainScene extends Phaser.Scene {
       this.hover.floor = hoverObj ? hoverObj.floor : 0;
     });
 
-    //TODO Move to editor?
-    this.input.on("wheel", (pointer: Phaser.Input.Pointer) => {
-      if (pointer.deltaY > 0) {
-        if (this.gameZoomLevel < 5) {
-          this.gameZoomLevel += 1;
-          camera.zoom = this.gameZoomLevel;
-          camera.centerOn(this.player.x, this.player.y);
-        }
-      } else if (pointer.deltaY < 0) {
-        if (this.gameZoomLevel > 1) {
-          this.gameZoomLevel -= 1;
-          camera.zoom = this.gameZoomLevel;
-          camera.centerOn(this.player.x, this.player.y);
-        }
-      }
-    });
-
     //ANCHOR Keyboard events
     this.input.keyboard?.on("keydown", (event: KeyboardEvent) => {
       switch (event.key) {
@@ -152,13 +138,11 @@ export default class MainScene extends Phaser.Scene {
           if (this.mode === "Create") {
             this.mode = "Play";
             this.sound.play("create-off");
-            this.player.state = "Idle";
-            this.player.z = 0;
-            this.player.floor = 0;
-            camera.zoom = this.gameZoomLevel;
+            camera.zoom = this.playZoomLevel;
           } else if (this.mode === "Play") {
             this.mode = "Create";
             this.player.state = "Editing";
+
             this.scene.launch("Editor", this);
           }
           break;
@@ -208,15 +192,15 @@ export default class MainScene extends Phaser.Scene {
     this.player.update();
 
     this.stateText?.destroy();
-    if (this.mode === "Create") return;
-    // this.stateText = this.add.text(
-    //   camera.worldView.right - this.cellWidth * 10,
-    //   camera.worldView.top + this.cellHeight,
-    //   `Row: ${this.hover.row}, Col:${this.hover.col}, Floor:${
-    //     this.hover.floor
-    //   }${this.hover.object ? `, ${this.hover.object.name}` : ""}`,
-    //   { fontSize: "12px" }
-    // );
+    if (this.mode === "Play") return;
+    this.stateText = this.add.text(
+      camera.worldView.right - this.cellWidth * 10,
+      camera.worldView.bottom - this.cellHeight,
+      `Row: ${this.hover.row}, Col:${this.hover.col}, Floor:${
+        this.hover.floor
+      }${this.hover.object ? `, ${this.hover.object.name}` : ""}`,
+      { fontSize: "12px" }
+    );
 
     if (this.debugTrigger) {
       this.debugTrigger = false;

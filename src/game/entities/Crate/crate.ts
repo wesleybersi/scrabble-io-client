@@ -1,4 +1,4 @@
-import MainScene from "../../scenes/MainScene";
+import MainScene from "../../scenes/Main/MainScene";
 import { Cardinal, Direction } from "../../types";
 import { getOppositeSide } from "../../utils/opposite";
 import { allCardinalsUndefined } from "../../utils/constants";
@@ -72,11 +72,18 @@ class Crate extends Phaser.GameObjects.Sprite {
     row: number,
     col: number,
     floor: number,
-    x: number,
-    y: number,
     connectBlocks: boolean
   ) {
-    super(scene as MainScene, x, y, "crates", frame.row * 5 + frame.col);
+    super(
+      scene as MainScene,
+      col * scene.cellWidth + scene.cellWidth / 2,
+      row * scene.cellHeight +
+        scene.cellHeight / 2 -
+        8 -
+        floor * scene.floorHeight,
+      "crates",
+      frame.row * 5 + frame.col
+    );
     this.scene = scene;
     this.setOrigin(0.5, 0.5);
     this.name = crateType;
@@ -87,11 +94,9 @@ class Crate extends Phaser.GameObjects.Sprite {
     this.origin = {
       row,
       col,
-      x: x + scene.cellWidth / 2,
-      y: y + 4 - this.floor * scene.floorHeight,
+      x: this.x,
+      y: this.y,
     };
-    this.y = y + 4 - this.floor * scene.floorHeight;
-    this.x = x + scene.cellWidth / 2;
     this.shadow = scene.add.sprite(
       this.x + scene.shadowOffset.x,
       this.y + scene.shadowOffset.y,
@@ -112,7 +117,7 @@ class Crate extends Phaser.GameObjects.Sprite {
       this.scene.events.emit("Pointing at", this);
     });
     this.on("pointerout", () => {
-      this.scene.events.emit("No longer pointing at", this);
+      this.scene.events.emit("Remove from pointer", this);
     });
 
     console.log("Row:", row, "Col:", col, "Floor", floor);
@@ -131,8 +136,8 @@ class Crate extends Phaser.GameObjects.Sprite {
       frame,
       row,
       col,
-      x,
-      y,
+      x: this.x,
+      y: this.y,
       connectBlocks,
     });
 
@@ -336,16 +341,10 @@ class Crate extends Phaser.GameObjects.Sprite {
 
   remove() {
     //Can only be removed in editor
-
     if (!this.scene) return;
+    this.scene.events.emit("Remove from pointer", this);
 
-    const { allCrates, portals } = this.scene;
-    for (const [type, portal] of Object.entries(portals)) {
-      if (!portal) continue;
-      if (portal.row === this.row && portal.col === this.col) {
-        portal.remove();
-      }
-    }
+    const { allCrates } = this.scene;
 
     for (const [pos, crate] of allCrates[this.floor]) {
       if (crate === this) {

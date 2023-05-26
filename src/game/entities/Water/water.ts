@@ -1,6 +1,6 @@
 import MainScene from "../../scenes/Main/MainScene";
 
-import Wall from "../wall";
+import Wall from "../Wall/wall";
 
 export default class Water extends Phaser.GameObjects.Sprite {
   scene: MainScene;

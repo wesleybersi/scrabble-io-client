@@ -3,53 +3,52 @@ import { Player } from "../player";
 import { isObstructed } from "./collision";
 import tweenToTile from "./tween-to-tile";
 import { allDirectionsFalse } from "../../../utils/constants";
-
 import { directionToAdjacent } from "../../../utils/opposite";
 
-export default function handleMovement(player: Player) {
-  if (player.state !== "Idle" && player.state !== "Holding") {
+export default function handleMovement(this: Player) {
+  if (this.state !== "Idle" && this.state !== "Holding") {
     return;
   }
-  const { mode } = player.scene;
+  const { mode } = this.scene;
   if (mode === "Create") return;
 
-  player.portalClone = null;
-  player.moveDuration = player.initialMoveDuration;
-  player.ease = "Linear";
+  this.portalClone = null;
+  this.moveDuration = this.initialMoveDuration;
+  this.ease = "Linear";
 
   let hasMoved = false;
-  for (const [direction, moving] of Object.entries(player.moving)) {
+  for (const [direction, moving] of Object.entries(this.moving)) {
     const attemptMove = () => {
-      if (!isObstructed(player, direction as Direction)) {
+      if (!isObstructed(this, direction as Direction)) {
         const { row, col } = directionToAdjacent(
           direction as Direction,
-          player.row,
-          player.col
+          this.row,
+          this.col
         );
         //ANCHOR Move valid
         if (
-          player.state !== "Pushing" &&
-          player.state !== "Pulling" &&
-          player.state !== "Falling" &&
-          player.state !== "Sliding" &&
-          player.state !== "Dead"
+          this.state !== "Pushing" &&
+          this.state !== "Pulling" &&
+          this.state !== "Falling" &&
+          this.state !== "Sliding" &&
+          this.state !== "Dead"
         ) {
-          player.state = "Moving";
+          this.state = "Moving";
         }
 
-        tweenToTile(player, col, row);
+        tweenToTile(this, col, row);
         return;
       } else {
-        player.removePortals = false;
-        player.forceMovement = Object.assign({}, allDirectionsFalse);
-        // player.moving = Object.assign({}, allDirectionsFalse);
-        player.portalClone = null;
-        if (player.state !== "Dead") player.state = "Idle";
+        this.removePortals = false;
+        this.forceMovement = Object.assign({}, allDirectionsFalse);
+        // this.moving = Object.assign({}, allDirectionsFalse);
+        this.portalClone = null;
+        if (this.state !== "Dead") this.state = "Idle";
         return;
       }
     };
-    if (player.forceMovement[direction as Direction]) {
-      player.forceMovement = Object.assign({}, allDirectionsFalse);
+    if (this.forceMovement[direction as Direction]) {
+      this.forceMovement = Object.assign({}, allDirectionsFalse);
       attemptMove();
       hasMoved = true;
       return;
@@ -61,6 +60,6 @@ export default function handleMovement(player: Player) {
     }
   }
   if (!hasMoved) {
-    player.forceMovement = Object.assign({}, allDirectionsFalse);
+    this.forceMovement = Object.assign({}, allDirectionsFalse);
   }
 }

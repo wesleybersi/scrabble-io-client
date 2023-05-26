@@ -1,8 +1,9 @@
-import Wall from "./entities/wall";
+import Wall from "./entities/Wall/wall";
 import Crate from "./entities/Crate/crate";
 import Ramp from "./entities/ramp";
+import Drain from "./entities/drain";
 
-export type HoverTarget = Wall | Ramp | Crate;
+export type HoverTarget = Wall | Ramp | Crate | Drain;
 export type Cardinal = "top" | "bottom" | "left" | "right";
 export type Direction = "up" | "down" | "left" | "right";
 

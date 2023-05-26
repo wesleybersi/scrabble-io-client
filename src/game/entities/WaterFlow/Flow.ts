@@ -59,12 +59,14 @@ export default class Flow extends Phaser.GameObjects.Sprite {
 
     this.currentCapacityFilled = this.waterMap.size * this.level;
 
+    let count = 0;
     const animatingWater: Water[] = [];
 
     let animating = false;
     const findFlow = (row: number, col: number) => {
       if (row <= 0 || row >= rowCount) return;
       if (col <= 0 || col >= rowCount) return;
+      count++;
       const { top, left, bottom, right } = getAdjacentTiles(row, col);
 
       const adjacentTiles = {
@@ -91,8 +93,6 @@ export default class Flow extends Phaser.GameObjects.Sprite {
       };
 
       //TODO
-      //If tile is drain this.drain++;
-      //If tile is raise this.raise++
 
       for (const [side, tile] of Object.entries(adjacentTiles)) {
         let aRow = row;
@@ -184,19 +184,19 @@ export default class Flow extends Phaser.GameObjects.Sprite {
     if (this.raiseCount) this.currentCapacityFilled += this.raiseCount;
     if (this.drainCount) this.currentCapacityFilled -= this.drainCount;
 
-    console.log(
-      Math.floor(this.currentCapacityFilled),
-      "of",
-      this.capacity,
-      "filled"
-    );
-    console.log(
-      "Waterlevel:",
-      this.level,
-      "flowing in",
-      this.waterMap.size,
-      "tiles"
-    );
+    // console.log(
+    //   Math.floor(this.currentCapacityFilled),
+    //   "of",
+    //   this.capacity,
+    //   "filled"
+    // );
+    // console.log(
+    //   "Waterlevel:",
+    //   this.level,
+    //   "flowing in",
+    //   this.waterMap.size,
+    //   "tiles"
+    // );
     this.scene.events.emit("Water Flowing", this.waterMap, animatingWater);
     if (!Math.floor(this.level)) this.remove();
   }

@@ -6,7 +6,7 @@ import tweenIntoVoid from "./tween-into-void";
 
 export default function tweenToTile(player: Player, col: number, row: number) {
   if (player.state === "Dead") return;
-  const { cellWidth, cellHeight } = player.scene;
+  const { cellWidth, cellHeight, mode } = player.scene;
   if (player.portalClone) {
     exitPortal(player);
   }
@@ -27,18 +27,12 @@ export default function tweenToTile(player: Player, col: number, row: number) {
     ease: player.ease,
     duration: player.moveDuration,
     onUpdate: () => {
-      if (player.state === "Dead") {
+      const { mode } = player.scene;
+      if (player.state === "Dead" || mode !== "Play") {
+        //When still moving while switching to editor.
         tween.remove();
+        player.resetToOrigin();
         return;
-      }
-      if (player.spiked) {
-        if (tween.progress > 0.25) {
-          player.setDepth(0);
-          player.scene.sound.play("splat");
-          player.state = "Dead";
-          player.spiked = false;
-          return;
-        }
       }
     },
     onComplete: () => {

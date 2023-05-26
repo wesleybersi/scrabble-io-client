@@ -4,6 +4,7 @@ export interface Item {
   name: string;
   description: string[];
   image: string;
+  frame?: number;
   canRotate?: boolean;
 }
 
@@ -32,10 +33,26 @@ const allCategories: { walls: Category; floor: Category; objects: Category } = {
         image: "big-wall",
       },
       {
+        name: "Ramp",
+        description: [],
+        image: "ramp-horizontal",
+        canRotate: true,
+      },
+      {
         name: "Stairs",
         description: [],
         image: "ramp-horizontal",
         canRotate: true,
+      },
+    ],
+  },
+  floor: {
+    name: "Floor Tiles",
+    items: [
+      {
+        name: "Water",
+        description: [],
+        image: "water",
       },
       {
         name: "Drain",
@@ -43,10 +60,6 @@ const allCategories: { walls: Category; floor: Category; objects: Category } = {
         image: "drain",
       },
     ],
-  },
-  floor: {
-    name: "Floor Tiles",
-    items: [],
   },
   objects: {
     name: "Objects",
@@ -57,6 +70,7 @@ const allCategories: { walls: Category; floor: Category; objects: Category } = {
           "The wooden crate is a lightweight container that breaks easily when subjected to pressure.",
         ],
         image: "crates",
+        frame: 0,
       },
       {
         name: "Metal Crate",
@@ -64,6 +78,7 @@ const allCategories: { walls: Category; floor: Category; objects: Category } = {
           "Crafted from solid steel, this crate can be moved around to create barriers and strategically block pathways. Its formidable design makes it hard to destroy, adding an extra layer of challenge for you as you navigate through the game world.",
         ],
         image: "crates",
+        frame: 5,
       },
     ],
   },
