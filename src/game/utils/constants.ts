@@ -19,6 +19,15 @@ export const allCardinalsUndefined = {
   right: undefined,
 };
 
+export const allCardinals3DUndefined = {
+  top: undefined,
+  bottom: undefined,
+  left: undefined,
+  right: undefined,
+  above: undefined,
+  below: undefined,
+};
+
 export const allDirectionsNull = {
   up: null,
   down: null,

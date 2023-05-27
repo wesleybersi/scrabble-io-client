@@ -4,7 +4,12 @@ import { inFrontOfPortal } from "../portals/reflection";
 import exitPortal from "../portals/exitPortal";
 import tweenIntoVoid from "./tween-into-void";
 
-export default function tweenToTile(player: Player, col: number, row: number) {
+export default function tweenToTile(
+  player: Player,
+  col: number,
+  row: number,
+  floor: number
+) {
   if (player.state === "Dead") return;
   const { cellWidth, cellHeight, mode } = player.scene;
   if (player.portalClone) {
@@ -27,7 +32,6 @@ export default function tweenToTile(player: Player, col: number, row: number) {
     ease: player.ease,
     duration: player.moveDuration,
     onUpdate: () => {
-      const { mode } = player.scene;
       if (player.state === "Dead" || mode !== "Play") {
         //When still moving while switching to editor.
         tween.remove();

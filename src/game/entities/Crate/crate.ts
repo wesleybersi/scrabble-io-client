@@ -1,7 +1,7 @@
 import MainScene from "../../scenes/Main/MainScene";
 import { Cardinal, Direction } from "../../types";
 import { getOppositeSide } from "../../utils/helper-functions";
-import { allCardinalsUndefined } from "../../utils/constants";
+import { allCardinals3DUndefined } from "../../utils/constants";
 import prepareMovement from "./movement/prepare-movement";
 import makeMove from "./movement/make-move";
 import Laser from "../Laser/laser";
@@ -45,16 +45,16 @@ class Crate extends Phaser.GameObjects.Sprite {
     bottom: Crate | undefined;
     left: Crate | undefined;
     right: Crate | undefined;
-    above?: Crate | undefined;
-    below?: Crate | undefined;
+    above: Crate | undefined;
+    below: Crate | undefined;
   };
   connectedTo!: {
     top: Crate | undefined;
     bottom: Crate | undefined;
     left: Crate | undefined;
     right: Crate | undefined;
-    above?: Crate | undefined;
-    below?: Crate | undefined;
+    above: Crate | undefined;
+    below: Crate | undefined;
   };
   autoConnect = {
     top: false,
@@ -119,8 +119,8 @@ class Crate extends Phaser.GameObjects.Sprite {
       "crates"
     );
     this.setHP();
-    this.connectedTo = Object.assign({}, allCardinalsUndefined);
-    this.adjacentCrates = Object.assign({}, allCardinalsUndefined);
+    this.connectedTo = Object.assign({}, allCardinals3DUndefined);
+    this.adjacentCrates = Object.assign({}, allCardinals3DUndefined);
 
     this.setDepth(1);
     this.generateShadow();
@@ -191,7 +191,7 @@ class Crate extends Phaser.GameObjects.Sprite {
         break;
       case "Pillar":
         this.hp = Infinity;
-        this.weight = 2;
+        this.weight = 1.75;
         break;
       // case "Deflector":
       //   this.hp = Infinity;
@@ -280,9 +280,10 @@ class Crate extends Phaser.GameObjects.Sprite {
       right: allCrates[this.floor].get(`${right.row},${right.col}`),
       left: allCrates[this.floor].get(`${left.row},${left.col}`),
       above: allCrates[this.floor + 1].get(`${this.row},${this.col}`),
-      below: allCrates[this.floor - 1]
-        ? allCrates[this.floor - 1].get(`${this.row},${this.col}`)
-        : undefined,
+      below:
+        this.floor >= 1
+          ? allCrates[this.floor - 1].get(`${this.row},${this.col}`)
+          : undefined,
     };
     for (const [side, crate] of Object.entries(this.adjacentCrates)) {
       if (this.connectedTo[side as Cardinal] && !crate) {
@@ -352,9 +353,7 @@ class Crate extends Phaser.GameObjects.Sprite {
     const shape = Array.from(this.shape);
     for (const crate of shape) {
       crate.shape.delete(this);
-    }
-    for (const crate of shape) {
-      crate.connectShape();
+      crate.remove();
     }
 
     if (this.adjacentCrates.above) this.adjacentCrates.above.remove();

@@ -44,6 +44,12 @@ const allCategories: { walls: Category; floor: Category; objects: Category } = {
         image: "ramp-horizontal",
         canRotate: true,
       },
+      {
+        name: "Ladder",
+        description: [],
+        image: "ladder",
+        frame: 3,
+      },
     ],
   },
   floor: {

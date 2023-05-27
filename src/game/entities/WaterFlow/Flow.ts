@@ -98,6 +98,9 @@ export default class Flow extends Phaser.GameObjects.Sprite {
       //TODO
 
       for (const [side, tile] of Object.entries(adjacentTiles)) {
+        if (tile.crate && tile.crate.crateType.includes("Pillar")) {
+          tile.crate = undefined;
+        }
         let aRow = row;
         let aCol = col;
         if (aRow <= 0 || aRow >= rowCount) return;
@@ -112,7 +115,7 @@ export default class Flow extends Phaser.GameObjects.Sprite {
           //Water contained by wall or crate
           visited.add(aPos);
           continue;
-        } else if (tile.crate) {
+        } else if (tile.crate && !tile.crate.crateType.includes("Pillar")) {
           if (tile.water) {
             tile.water.remove();
           }

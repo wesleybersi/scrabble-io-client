@@ -1,6 +1,7 @@
 import MainScene from "../../scenes/Main/MainScene";
 import { Direction } from "../../types";
 import { getAdjacentTiles } from "../../utils/helper-functions";
+import LadderPiece from "./ladder";
 
 export default class Wall extends Phaser.GameObjects.Sprite {
   scene: MainScene;
@@ -35,6 +36,13 @@ export default class Wall extends Phaser.GameObjects.Sprite {
   collideLeft = true;
   collideRight = true;
   collidesOn = [0];
+  ladder: LadderPiece[] = [];
+  hasLadder = {
+    top: false,
+    bottom: false,
+    right: false,
+    left: false,
+  };
   constructor(
     scene: MainScene,
     wallType: "half-wall" | "wall" | "big-wall",

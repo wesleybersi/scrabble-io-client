@@ -12,7 +12,7 @@ import { allCardinalsNull, allDirectionsFalse } from "../../utils/constants";
 import resetPortals from "./portals/resetPortals";
 import { portalRemoved } from "./portals/resetPortals";
 import Crate from "../Crate/crate";
-
+import LadderPiece from "../Wall/ladder";
 //Methods
 import handleMovement from "./movement/move";
 
@@ -33,6 +33,7 @@ export class Player extends Phaser.GameObjects.Sprite {
   state:
     | "Idle"
     | "Moving"
+    | "Climbing"
     | "Sliding"
     | "Pushing"
     | "Holding"
@@ -42,6 +43,10 @@ export class Player extends Phaser.GameObjects.Sprite {
     | "Dead"
     | "Disabled"
     | "Editing" = "Idle";
+  enterLadder = false;
+  exitLadder = false;
+  ladderMovement: "up" | "down" = "up";
+  ladder: LadderPiece[] | null = null;
   row: number;
   col: number;
   portalClone!: Clone | null;
@@ -421,6 +426,7 @@ export class Player extends Phaser.GameObjects.Sprite {
           this.hasReset = false;
         }
         break;
+
       case "Pulling":
       case "Pushing":
       case "Moving":
@@ -431,7 +437,6 @@ export class Player extends Phaser.GameObjects.Sprite {
             if (this.state === "Pulling") {
               movementDirection = getOppositeDirection(direction as Direction);
             }
-
             const action = this.state === "Sliding" ? "sliding" : "moving";
 
             const animation = `${action}-${movementDirection}`;
@@ -441,6 +446,10 @@ export class Player extends Phaser.GameObjects.Sprite {
           }
         }
 
+        break;
+      case "Climbing":
+        if (this.anims.currentAnim?.key !== "moving-up")
+          this.anims.play("moving-up");
         break;
 
       case "Holding":
@@ -470,6 +479,11 @@ export class Player extends Phaser.GameObjects.Sprite {
         this.lastMove = direction;
         break;
       }
+    }
+
+    if (this.ladder) {
+      if (this.anims.currentAnim?.key !== "moving-up")
+        this.anims.play("moving-up");
     }
 
     this.adjacentTiles = {

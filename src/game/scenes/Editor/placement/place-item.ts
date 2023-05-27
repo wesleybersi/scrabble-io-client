@@ -5,6 +5,7 @@ import Drain from "../../../entities/drain";
 import Crate from "../../../entities/Crate/crate";
 import Flow from "../../../entities/WaterFlow/Flow";
 import Ramp from "../../../entities/ramp";
+import LadderPiece from "../../../entities/Wall/ladder";
 
 export function placeItem(
   scene: EditorScene,
@@ -75,6 +76,39 @@ export function placeItem(
       }
       break;
     case "Stairs":
+      break;
+    case "Ladder":
+      {
+        if (!hover.object) return;
+        if (by !== "click") return;
+        const { row, col, floor } = hover.object;
+        if (hover.object instanceof Wall && hover.object.ladder.length === 0) {
+          if (hover.object.wallType === "half-wall") {
+            hover.object.ladder.push(
+              new LadderPiece(main, row, col, floor, {
+                top: true,
+                bottom: true,
+              })
+            );
+            hover.object.hasLadder.bottom = true;
+          } else if (hover.object.wallType === "wall") {
+            const ladder = [
+              new LadderPiece(main, row, col, floor, { bottom: true }),
+              new LadderPiece(main, row, col, floor + 1, { top: true }),
+            ];
+            hover.object.ladder = hover.object.ladder.concat(ladder);
+            hover.object.hasLadder.bottom = true;
+          } else if (hover.object.wallType === "big-wall") {
+            const ladder = [
+              new LadderPiece(main, row, col, floor, { bottom: true }),
+              new LadderPiece(main, row, col, floor + 1),
+              new LadderPiece(main, row, col, floor + 2, { top: true }),
+            ];
+            hover.object.ladder = hover.object.ladder.concat(ladder);
+            hover.object.hasLadder.bottom = true;
+          }
+        }
+      }
       break;
   }
 
@@ -235,7 +269,7 @@ export function placeItem(
           }
         });
       };
-      createPillar(4);
+      createPillar(scene.amount);
     }
   }
 }

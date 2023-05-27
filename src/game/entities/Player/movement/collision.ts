@@ -148,7 +148,16 @@ export function isObstructed(player: Player, direction: Direction): boolean {
     }
   }
 
-  //TODO Crate next to targetRamp.low?
+  const currentWall = allWalls.get(`${player.row},${player.col}`);
+  console.log(currentWall);
+  if (currentWall && currentWall.isTraversable(player.floor)) {
+    if (currentWall.hasLadder.bottom && direction === "down") {
+      player.enterLadder = true;
+      player.ladder = currentWall.ladder;
+      player.ladderMovement = "down";
+      return false;
+    }
+  }
 
   if (
     !isOnRamp &&
@@ -167,6 +176,16 @@ export function isObstructed(player: Player, direction: Direction): boolean {
   }
 
   if (targetWall) {
+    if (!player.ladder) {
+      if (targetWall.hasLadder.bottom) {
+        if (direction === "up") {
+          player.enterLadder = true;
+          player.ladder = targetWall.ladder;
+          player.ladderMovement = "up";
+          return false;
+        }
+      }
+    }
     if (targetWall.isColliding(direction, player.floor)) return true;
     console.log("Wall Collision");
   }
@@ -269,6 +288,7 @@ export function isObstructed(player: Player, direction: Direction): boolean {
     if (!targetCrate.active) return true;
     if (!targetCrate.hasInteraction) return true;
     if (targetCrate.isFalling) return true;
+    if (targetCrate.isMoving) return true;
     if (targetCrate.floor !== player.floor) return true;
     const { allIncluded, abort } = targetCrate.prepareMovement(
       usePullDirection ? pullDirection : direction
@@ -337,6 +357,13 @@ export function isObstructed(player: Player, direction: Direction): boolean {
 
     if (player.state === "Holding") player.state = "Pulling";
     else player.state = "Pushing";
+
+    if (
+      player.state === "Pushing" &&
+      targetCrate.crateType.includes("Pillar")
+    ) {
+      // return true;
+    }
 
     return false;
   }

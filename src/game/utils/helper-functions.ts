@@ -6,6 +6,8 @@ export function getOppositeSide(cardinal: Cardinal) {
     bottom: "top",
     left: "right",
     right: "left",
+    above: "below",
+    below: "above",
   };
   return oppositeMap[cardinal];
 }

@@ -24,6 +24,8 @@ import spritesheetExplosion from "../../../assets/images/spritesheets/explosion.
 import spritesheetCracks from "../../../assets/images/spritesheets/wallcrack.png";
 import spritesheetOil from "../../../assets/images/spritesheets/oil.png";
 
+import spritesheetLadder from "../../../assets/images/spritesheets/ladder.png";
+
 import imageCornerpiece from "../../../assets/images/cornerpiece.png";
 import imageEntrance from "../../../assets/images/entrance.png";
 import imageSpikes from "../../../assets/images/spikes.png";
@@ -70,6 +72,11 @@ export default function preload(this: MainScene) {
     frameWidth: 32,
     frameHeight: 40,
   });
+  this.load.spritesheet("ladder", spritesheetLadder, {
+    frameWidth: 32,
+    frameHeight: 16,
+  });
+
   this.load.spritesheet("ramp-horizontal", imageRampHorizontal, {
     frameWidth: 64,
     frameHeight: 40,
