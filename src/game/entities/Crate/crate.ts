@@ -74,6 +74,14 @@ class Crate extends Phaser.GameObjects.Sprite {
   } | null;
   isBlockingLaser: Map<string, Laser> = new Map();
   collidesOn: number[] = [];
+  history: {
+    row: number;
+    col: number;
+    floor: number;
+    direction: Direction;
+    oppositeDirection: Direction;
+  }[] = [];
+  historyIndex = 0;
   constructor(
     scene: MainScene,
     crateType:
@@ -121,6 +129,13 @@ class Crate extends Phaser.GameObjects.Sprite {
     this.setHP();
     this.connectedTo = Object.assign({}, allCardinals3DUndefined);
     this.adjacentCrates = Object.assign({}, allCardinals3DUndefined);
+    this.history.push({
+      row,
+      col,
+      floor,
+      direction: "up",
+      oppositeDirection: "down",
+    });
 
     this.setDepth(1);
     this.generateShadow();
@@ -301,9 +316,10 @@ class Crate extends Phaser.GameObjects.Sprite {
     direction: Direction,
     allIncluded: Set<Crate>,
     duration: number,
-    completed: Set<Crate>
+    completed: Set<Crate>,
+    record: boolean
   ) {
-    makeMove(this, direction, allIncluded, duration, completed);
+    makeMove(this, direction, allIncluded, duration, completed, record);
   }
   explode(explodingTiles: Set<string> = new Set()) {
     const { cellWidth, cellHeight } = this.scene;

@@ -340,7 +340,8 @@ export function isObstructed(player: Player, direction: Direction): boolean {
         usePullDirection ? pullDirection : direction,
         allIncluded,
         duration * weightMultiplier,
-        completedTweens
+        completedTweens,
+        true
       );
     }
     // const completedPortalTweens = new Set<Crate>();

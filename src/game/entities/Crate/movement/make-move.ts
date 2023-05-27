@@ -10,7 +10,8 @@ export default function makeMove(
   direction: "up" | "down" | "left" | "right",
   allIncluded: Set<Crate>,
   duration: number,
-  completed: Set<Crate>
+  completed: Set<Crate>,
+  record: boolean
 ) {
   if (crate.isMoving) return;
   crate.isMoving = true;
@@ -43,7 +44,16 @@ export default function makeMove(
     ease: "Linear",
     duration: duration,
     onStart: () => {
-      //
+      if (record) {
+        crate.history.push({
+          row: crate.row,
+          col: crate.col,
+          floor: crate.floor,
+          direction: crate.direction,
+          oppositeDirection: getOppositeDirection(crate.direction),
+        });
+        crate.historyIndex = crate.history.length - 1;
+      }
     },
     onComplete: () => {
       //   if (crate.portalTrigger) {
@@ -231,7 +241,8 @@ export function moveComplete(crate: Crate) {
               crate.direction,
               allIncluded,
               duration * weightMultiplier,
-              completedTweens
+              completedTweens,
+              true
             );
           }
         }

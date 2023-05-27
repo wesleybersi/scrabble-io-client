@@ -42,4 +42,9 @@ export default class LadderPiece extends Phaser.GameObjects.Sprite {
 
     this.scene.add.existing(this);
   }
+  remove() {
+    if (this.top) this.top.destroy();
+    if (this.bottom) this.bottom.destroy();
+    this.destroy();
+  }
 }

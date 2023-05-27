@@ -324,6 +324,10 @@ export default class Wall extends Phaser.GameObjects.Sprite {
       }
     });
 
+    if (this.ladder.length > 0) {
+      for (const piece of this.ladder) piece.remove();
+    }
+
     this.shadow.destroy();
     this.topShadow.destroy();
     this.destroy();

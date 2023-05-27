@@ -160,6 +160,56 @@ export default class MainScene extends Phaser.Scene {
             // On start fulll screen
           }
           break;
+        case "PageUp":
+        case "PageDown":
+          this.allCrates.forEach((floor) => {
+            for (const [pos, crate] of floor) {
+              if (event.key === "PageDown" && crate.historyIndex <= 0) continue;
+              if (
+                event.key === "PageUp" &&
+                crate.historyIndex >= crate.history.length - 1
+              )
+                continue;
+              const { allIncluded, abort } = crate.prepareMovement(
+                crate.history[crate.historyIndex].oppositeDirection
+              );
+
+              if (abort) return;
+
+              let weightMultiplier = 1;
+              for (const c of allIncluded) {
+                if (c.weight > weightMultiplier) weightMultiplier = c.weight;
+              }
+
+              const completedTweens = new Set<Crate>();
+              const duration = Math.max(
+                ((Math.sqrt(allIncluded.size) *
+                  this.player.initialMoveDuration) /
+                  1.5) *
+                  0.5,
+                this.player.initialMoveDuration / 1.5
+              );
+              for (const includedCrate of allIncluded) {
+                includedCrate.makeMove(
+                  crate.history[crate.historyIndex].oppositeDirection,
+                  allIncluded,
+                  duration * weightMultiplier,
+                  completedTweens,
+                  false
+                );
+              }
+              if (event.key === "PageDown" && crate.historyIndex <= 1) return;
+              if (
+                event.key === "PageUp" &&
+                crate.historyIndex >= crate.history.length - 2
+              )
+                return;
+              if (event.key === "PageUp") crate.historyIndex++;
+              else if (event.key === "PageDown") crate.historyIndex--;
+            }
+          });
+
+          break;
       }
     });
   }
