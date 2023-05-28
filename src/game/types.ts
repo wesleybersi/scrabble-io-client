@@ -5,6 +5,7 @@ import Drain from "./entities/drain";
 
 export type HoverTarget = Wall | Ramp | Crate | Drain;
 export type Cardinal = "top" | "bottom" | "left" | "right" | "above" | "below";
+export type Cardinal2D = "top" | "bottom" | "left" | "right";
 export type Direction = "up" | "down" | "left" | "right";
 
 //    "Linear"

@@ -9,6 +9,8 @@ import spritesheetCrates from "../../../assets/images/spritesheets/crates-40.png
 // import spritesheetCrates from "../../../assets/images/spritesheets/crates-48.png";
 
 import spritesheetHalfWall from "../../../assets/images/spritesheets/walls-40.png";
+import spritesheetWallTier2 from "../../../assets/images/spritesheets/walls-40-tier2.png";
+
 import spritesheetWall from "../../../assets/images/spritesheets/walls-56.png";
 import spritesheetBigWall from "../../../assets/images/spritesheets/walls-72.png";
 
@@ -86,10 +88,16 @@ export default function preload(this: MainScene) {
     frameHeight: 64,
   });
 
-  this.load.spritesheet("half-wall", spritesheetHalfWall, {
+  this.load.spritesheet("wall-tier1", spritesheetHalfWall, {
     frameWidth: 32,
     frameHeight: 40,
   });
+
+  this.load.spritesheet("wall-tier2", spritesheetWallTier2, {
+    frameWidth: 32,
+    frameHeight: 40,
+  });
+
   this.load.spritesheet("wall", spritesheetWall, {
     frameWidth: 32,
     frameHeight: 56,

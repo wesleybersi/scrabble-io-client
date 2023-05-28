@@ -10,8 +10,7 @@ import LadderPiece from "../../../entities/Wall/ladder";
 export function placeItem(
   scene: EditorScene,
   item: Item,
-  by: "click" | "move",
-  size?: number
+  by: "click" | "move"
 ) {
   console.log("Placing", item.name, "by", by);
 
@@ -20,17 +19,57 @@ export function placeItem(
 
   const objPos = `${hover.object?.row},${hover.object?.col}`;
   const pos = `${hover.row},${hover.col}`;
-  const wall = allWalls.get(pos);
 
   switch (item.name) {
-    case "Half Wall":
-      if (!wall) new Wall(main, "half-wall", hover.row, hover.col);
-      break;
     case "Wall":
-      if (!wall) new Wall(main, "wall", hover.row, hover.col);
-      break;
-    case "Big Wall":
-      if (!wall) new Wall(main, "big-wall", hover.row, hover.col);
+      {
+        let placeRow = hover.row;
+        let placeCol = hover.col;
+        let placeFloor = 0;
+
+        if (by === "click") {
+          if (hover.object instanceof Ramp) return;
+          if (hover.object instanceof Wall) {
+            placeFloor = hover.object.floor + 1;
+            placeRow = hover.object.row;
+            placeCol = hover.object.col;
+          }
+        }
+        if (scene.amount === 1) {
+          if (allWalls[placeFloor].has(`${placeRow},${placeCol}`)) return;
+          new Wall(main, placeRow, placeCol, placeFloor);
+        } else if (scene.amount === 2) {
+          if (
+            allWalls[placeFloor].has(`${placeRow},${placeCol}`) ||
+            allWalls[placeFloor + 1].has(`${placeRow},${placeCol}`)
+          )
+            return;
+          new Wall(main, placeRow, placeCol, placeFloor);
+          new Wall(main, placeRow, placeCol, placeFloor + 1);
+        } else if (scene.amount === 3) {
+          if (
+            allWalls[placeFloor].has(`${placeRow},${placeCol}`) ||
+            allWalls[placeFloor + 1].has(`${placeRow},${placeCol}`) ||
+            allWalls[placeFloor + 2].has(`${placeRow},${placeCol}`)
+          )
+            return;
+          new Wall(main, placeRow, placeCol, placeFloor);
+          new Wall(main, placeRow, placeCol, placeFloor + 1);
+          new Wall(main, placeRow, placeCol, placeFloor + 2);
+        } else if (scene.amount === 4) {
+          if (
+            allWalls[placeFloor].has(`${placeRow},${placeCol}`) ||
+            allWalls[placeFloor + 1].has(`${placeRow},${placeCol}`) ||
+            allWalls[placeFloor + 2].has(`${placeRow},${placeCol}`) ||
+            allWalls[placeFloor + 3].has(`${placeRow},${placeCol}`)
+          )
+            return;
+          new Wall(main, placeRow, placeCol, placeFloor);
+          new Wall(main, placeRow, placeCol, placeFloor + 1);
+          new Wall(main, placeRow, placeCol, placeFloor + 2);
+          new Wall(main, placeRow, placeCol, placeFloor + 3);
+        }
+      }
       break;
     case "Ramp":
       {
@@ -42,7 +81,7 @@ export function placeItem(
         let floorPlacement = 0;
         if (hover.object instanceof Ramp) return;
         if (hover.object instanceof Wall) {
-          floorPlacement = Math.max(...hover.object.collidesOn) + 1;
+          floorPlacement = hover.object.floor + 1;
           placeRow = hover.object.row;
           placeCol = hover.object.col;
         }
@@ -81,34 +120,35 @@ export function placeItem(
       {
         if (!hover.object) return;
         if (by !== "click") return;
-        const { row, col, floor } = hover.object;
+        // const { row, col, floor } = hover.object;
         if (hover.object instanceof Wall && hover.object.ladder.length === 0) {
-          if (hover.object.wallType === "half-wall") {
-            hover.object.ladder.push(
-              new LadderPiece(main, row, col, floor, {
-                top: true,
-                bottom: true,
-              })
-            );
-            hover.object.hasLadder.bottom = true;
-          } else if (hover.object.wallType === "wall") {
-            const ladder = [
-              new LadderPiece(main, row, col, floor, { bottom: true }),
-              new LadderPiece(main, row, col, floor + 1, { top: true }),
-            ];
-            hover.object.ladder = hover.object.ladder.concat(ladder);
-            hover.object.hasLadder.bottom = true;
-          } else if (hover.object.wallType === "big-wall") {
-            const ladder = [
-              new LadderPiece(main, row, col, floor, { bottom: true }),
-              new LadderPiece(main, row, col, floor + 1),
-              new LadderPiece(main, row, col, floor + 2, { top: true }),
-            ];
-            hover.object.ladder = hover.object.ladder.concat(ladder);
-            hover.object.hasLadder.bottom = true;
-          }
+          //TODO Recurse
+          // if (hover.object.wallType === "half-wall") {
+          //   hover.object.ladder.push(
+          //     new LadderPiece(main, row, col, floor, {
+          //       top: true,
+          //       bottom: true,
+          //     })
+          //   );
+          //   hover.object.hasLadder.bottom = true;
+          // } else if (hover.object.wallType === "wall") {
+          //   const ladder = [
+          //     new LadderPiece(main, row, col, floor, { bottom: true }),
+          //     new LadderPiece(main, row, col, floor + 1, { top: true }),
+          //   ];
+          //   hover.object.ladder = hover.object.ladder.concat(ladder);
+          //   hover.object.hasLadder.bottom = true;
+          // } else if (hover.object.wallType === "big-wall") {
+          //   const ladder = [
+          //     new LadderPiece(main, row, col, floor, { bottom: true }),
+          //     new LadderPiece(main, row, col, floor + 1),
+          //     new LadderPiece(main, row, col, floor + 2, { top: true }),
+          //   ];
+          //   hover.object.ladder = hover.object.ladder.concat(ladder);
+          //   hover.object.hasLadder.bottom = true;
         }
       }
+
       break;
   }
 
@@ -161,7 +201,7 @@ export function placeItem(
             placeRow = hover.object.row;
             placeCol = hover.object.col;
           } else if (hover.object instanceof Wall) {
-            floorPlacement = Math.max(...hover.object.collidesOn) + 1;
+            floorPlacement = hover.object.floor + 1;
             placeRow = hover.object.row;
             placeCol = hover.object.col;
           } else return;
@@ -191,7 +231,7 @@ export function placeItem(
           placeRow = hover.object.row;
           placeCol = hover.object.col;
         } else if (hover.object instanceof Wall) {
-          placeFloor = Math.max(...hover.object.collidesOn) + 1;
+          placeFloor = hover.object.floor + 1;
           placeRow = hover.object.row;
           placeCol = hover.object.col;
         } else return;

@@ -74,22 +74,22 @@ export default class Flow extends Phaser.GameObjects.Sprite {
 
       const adjacentTiles = {
         top: {
-          wall: allWalls.get(`${top.row},${top.col}`),
+          wall: allWalls[this.floor].get(`${top.row},${top.col}`),
           crate: allCrates[this.floor].get(`${top.row},${top.col}`),
           water: this.waterMap.get(`${top.row},${top.col}`),
         },
         bottom: {
-          wall: allWalls.get(`${bottom.row},${bottom.col}`),
+          wall: allWalls[this.floor].get(`${bottom.row},${bottom.col}`),
           crate: allCrates[this.floor].get(`${bottom.row},${bottom.col}`),
           water: this.waterMap.get(`${bottom.row},${bottom.col}`),
         },
         left: {
-          wall: allWalls.get(`${left.row},${left.col}`),
+          wall: allWalls[this.floor].get(`${left.row},${left.col}`),
           crate: allCrates[this.floor].get(`${left.row},${left.col}`),
           water: this.waterMap.get(`${left.row},${left.col}`),
         },
         right: {
-          wall: allWalls.get(`${right.row},${right.col}`),
+          wall: allWalls[this.floor].get(`${right.row},${right.col}`),
           crate: allCrates[this.floor].get(`${right.row},${right.col}`),
           water: this.waterMap.get(`${right.row},${right.col}`),
         },

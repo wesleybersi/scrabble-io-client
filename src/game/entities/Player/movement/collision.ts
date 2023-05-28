@@ -1,7 +1,7 @@
 import { Player } from "../player";
 import Crate from "../../Crate/crate";
 
-import { Direction, Cardinal } from "../../../types";
+import { Direction, Cardinal, Cardinal2D } from "../../../types";
 import {
   getOppositeSide,
   directionToCardinal,
@@ -42,7 +42,7 @@ export function isObstructed(player: Player, direction: Direction): boolean {
   const targetPos = `${targetRow},${targetCol}`;
 
   let targetFloor = floor.getTileAt(targetCol, targetRow);
-  let targetWall = allWalls.get(targetPos);
+  let targetWall = allWalls[player.floor].get(targetPos);
   let targetRamp = allRamps[player.floor].get(targetPos);
   let targetCrate = allCrates[player.floor].get(targetPos)?.active
     ? allCrates[player.floor].get(targetPos)
@@ -61,7 +61,9 @@ export function isObstructed(player: Player, direction: Direction): boolean {
       direction = newDirection;
 
       targetFloor = tilemap.floor.getTileAt(newTarget.col, newTarget.row);
-      targetWall = allWalls.get(`${newTarget.row},${newTarget.col}`);
+      targetWall = allWalls[player.floor].get(
+        `${newTarget.row},${newTarget.col}`
+      );
       targetRamp = allRamps[player.floor].get(
         `${newTarget.row},${newTarget.col}`
       );
@@ -94,10 +96,7 @@ export function isObstructed(player: Player, direction: Direction): boolean {
       currentRamp.high.col === player.col
     ) {
       if (direction === currentRamp.direction) {
-        if (
-          (targetWall && Math.max(...targetWall.collidesOn) === player.floor) ||
-          targetCrate
-        ) {
+        if ((targetWall && targetWall.isTraversable) || targetCrate) {
           //If moving to next floor
           //Next floor approved
           player.floor++;
@@ -148,9 +147,11 @@ export function isObstructed(player: Player, direction: Direction): boolean {
     }
   }
 
-  const currentWall = allWalls.get(`${player.row},${player.col}`);
+  const currentWall = allWalls[player.floor - 1]?.get(
+    `${player.row},${player.col}`
+  );
   console.log(currentWall);
-  if (currentWall && currentWall.isTraversable(player.floor)) {
+  if (currentWall && currentWall.isTraversable) {
     if (currentWall.hasLadder.bottom && direction === "down") {
       player.enterLadder = true;
       player.ladder = currentWall.ladder;
@@ -162,7 +163,7 @@ export function isObstructed(player: Player, direction: Direction): boolean {
   if (
     !isOnRamp &&
     player.floor > 0 &&
-    (!targetWall || targetWall.isTraversable(player.floor) === false) &&
+    !targetWall &&
     !targetCrate &&
     !targetRamp
   ) {
@@ -172,6 +173,7 @@ export function isObstructed(player: Player, direction: Direction): boolean {
       : undefined;
     if (crate) return false;
     console.log("Air Collision");
+    if (currentWall && currentWall.isTraversable) return false;
     return true;
   }
 
@@ -186,7 +188,7 @@ export function isObstructed(player: Player, direction: Direction): boolean {
         }
       }
     }
-    if (targetWall.isColliding(direction, player.floor)) return true;
+    if (targetWall.isColliding(direction)) return true;
     console.log("Wall Collision");
   }
 
@@ -266,7 +268,7 @@ export function isObstructed(player: Player, direction: Direction): boolean {
       } else if (targetCrate === crate) {
         heldCrate = crate;
         player.state = "Idle";
-        player.holding[side as Cardinal] = null;
+        player.holding[side as Cardinal2D] = null;
       }
     }
     if (heldCrate) {
@@ -275,7 +277,7 @@ export function isObstructed(player: Player, direction: Direction): boolean {
         return true;
       } else if (targetCrate === heldCrate) {
         player.state = "Idle";
-        player.holding[side as Cardinal] = null;
+        player.holding[side as Cardinal2D] = null;
       } else {
         targetCrate = heldCrate;
       }

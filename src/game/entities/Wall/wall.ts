@@ -5,7 +5,6 @@ import LadderPiece from "./ladder";
 
 export default class Wall extends Phaser.GameObjects.Sprite {
   scene: MainScene;
-  wallType: "half-wall" | "wall" | "big-wall";
   shadow!: Phaser.GameObjects.Image;
   topShadow!: Phaser.GameObjects.Image;
   zValue: number;
@@ -24,6 +23,8 @@ export default class Wall extends Phaser.GameObjects.Sprite {
     bottom: Wall | undefined;
     right: Wall | undefined;
     left: Wall | undefined;
+    above: Wall | undefined;
+    below: Wall | undefined;
   };
   connectedTo = {
     top: false,
@@ -35,7 +36,7 @@ export default class Wall extends Phaser.GameObjects.Sprite {
   collideUp = true;
   collideLeft = true;
   collideRight = true;
-  collidesOn = [0];
+  isTraversable = true;
   ladder: LadderPiece[] = [];
   hasLadder = {
     top: false,
@@ -43,52 +44,31 @@ export default class Wall extends Phaser.GameObjects.Sprite {
     right: false,
     left: false,
   };
-  constructor(
-    scene: MainScene,
-    wallType: "half-wall" | "wall" | "big-wall",
-    row: number,
-    col: number
-  ) {
+  constructor(scene: MainScene, row: number, col: number, floor: number) {
     super(
       scene as MainScene,
       col * scene.cellWidth + scene.cellWidth / 2,
       row * scene.cellHeight,
-      wallType,
+      floor === 0 ? "wall-tier1" : "wall-tier2",
       0
     );
-
-    switch (wallType) {
-      case "half-wall":
-        this.y = row * scene.cellHeight + 4;
-        this.zValue = 16;
-        break;
-      case "wall":
-        this.y = row * scene.cellHeight - 4;
-        this.zValue = 32;
-        this.collidesOn.push(1);
-        break;
-      case "big-wall":
-        this.y = row * scene.cellHeight - 12;
-        this.zValue = 48;
-        this.collidesOn.push(1, 2);
-        break;
-    }
-
+    this.floor = floor;
+    this.y = row * scene.cellHeight + 4 - floor * scene.floorHeight;
+    this.zValue = 16;
     this.scene = scene;
-    this.name = wallType;
+    this.name = "Wall";
     this.row = row;
     this.col = col;
-    this.floor = 0;
-    this.wallType = wallType;
     this.shadow = this.scene.add.image(
       this.x + scene.shadowOffset.x,
       this.y + scene.shadowOffset.y,
-      this.wallType
+      "wall-tier1"
     );
-    this.topShadow = this.scene.add.image(this.x, this.y, "half-wall");
+    if (this.floor > 0) this.shadow.alpha = 0;
+    this.topShadow = this.scene.add.image(this.x, this.y, "wall-tier1");
     this.topShadow.alpha = 0;
 
-    this.setDepth(row);
+    this.setDepth(row + this.floor * scene.rowCount);
     this.setOrigin(0.5, 0.5);
 
     //ANCHOR HOVER events
@@ -100,7 +80,7 @@ export default class Wall extends Phaser.GameObjects.Sprite {
       this.scene.events.emit("Remove from pointer", this);
     });
 
-    scene.allWalls.set(`${row},${col}`, this);
+    scene.allWalls[this.floor].set(`${row},${col}`, this);
 
     scene.events.on("Connect Walls", (row: number, col: number) => {
       if (this.row === row && this.col === col) this.update();
@@ -114,55 +94,28 @@ export default class Wall extends Phaser.GameObjects.Sprite {
     this.scene.add.existing(this);
   }
 
-  isCollide(direction: Direction, floor: number): boolean {
-    // if (this.collidesOn) return false;
-    return false;
-  }
   generateShadow() {
-    if (this.connectedTo.bottom) {
+    // if (this.floor > 0) return;
+    if (this.connectedTo.bottom || this.adjacentWalls.bottom) {
       this.shadow.alpha = 0;
+      this.topShadow.alpha = 0;
       return;
     }
-    const { shadowOffset, cellHeight } = this.scene;
+
+    //TODO Make a generic floorHeight square shadow to use everywhere.
+
+    const { shadowOffset, cellHeight, floorHeight } = this.scene;
     this.shadow.x = this.x + shadowOffset.x;
-
-    switch (this.wallType) {
-      case "half-wall":
-        this.shadow.y = this.y + shadowOffset.y;
-        break;
-      case "wall":
-        this.shadow.y = this.y + shadowOffset.y * 2;
-        break;
-      case "big-wall":
-        this.shadow.y = this.y + shadowOffset.y * 3;
-        break;
-    }
-
+    this.shadow.y = this.y + shadowOffset.y + this.floor * (floorHeight * 2);
     this.shadow.alpha = 0.15;
     this.shadow.setTint(0x000000);
 
-    if (
-      this.wallType === "half-wall" &&
-      this.adjacentWalls.top &&
-      this.adjacentWalls.top.wallType === "wall"
-    ) {
+    if (this.adjacentWalls.top) {
       this.topShadow.alpha = 0.15;
       this.topShadow.setTint(0x000000);
-      this.topShadow.setDepth(this.row + 1);
+      this.topShadow.setDepth(this.row + this.floor * this.scene.rowCount + 1);
       this.topShadow.scaleY = 0.3334;
       this.topShadow.y = this.y - cellHeight / 2;
-    } else if (
-      this.wallType === "wall" &&
-      this.adjacentWalls.top &&
-      this.adjacentWalls.top.wallType === "big-wall"
-    ) {
-      this.topShadow.alpha = 0.15;
-      this.topShadow.setTint(0x000000);
-      this.topShadow.setDepth(this.row + 1);
-      this.topShadow.scaleY = 0.3334;
-      this.topShadow.y = this.y - cellHeight / 2;
-    } else {
-      this.topShadow.alpha = 0;
     }
   }
   update() {
@@ -178,33 +131,34 @@ export default class Wall extends Phaser.GameObjects.Sprite {
     const { top, bottom, right, left } = this.adjacent;
 
     this.adjacentWalls = {
-      top: allWalls.get(`${top.row},${top.col}`),
-      bottom: allWalls.get(`${bottom.row},${bottom.col}`),
-      right: allWalls.get(`${right.row},${right.col}`),
-      left: allWalls.get(`${left.row},${left.col}`),
+      top: allWalls[this.floor].get(`${top.row},${top.col}`),
+      bottom: allWalls[this.floor].get(`${bottom.row},${bottom.col}`),
+      right: allWalls[this.floor].get(`${right.row},${right.col}`),
+      left: allWalls[this.floor].get(`${left.row},${left.col}`),
+      above: allWalls[this.floor + 1]?.get(`${this.row},${this.col}`),
+      below: allWalls[this.floor - 1]?.get(`${this.row},${this.col}`),
     };
 
+    this.isTraversable = this.adjacentWalls.above ? false : true;
+
+    if (this.floor > 0) {
+      const inFrontBelow = allWalls[this.floor - 1].get(
+        `${bottom.row},${bottom.col}`
+      );
+      if (inFrontBelow) {
+        this.setTexture("wall-tier1");
+      } else {
+        this.setTexture("wall-tier2");
+      }
+    } else {
+      this.setTexture("wall-tier1");
+    }
+
     this.connectedTo = {
-      top:
-        this.adjacentWalls.top &&
-        this.adjacentWalls.top.wallType === this.wallType
-          ? true
-          : false,
-      bottom:
-        this.adjacentWalls.bottom &&
-        this.adjacentWalls.bottom.wallType === this.wallType
-          ? true
-          : false,
-      right:
-        this.adjacentWalls.right &&
-        this.adjacentWalls.right.wallType === this.wallType
-          ? true
-          : false,
-      left:
-        this.adjacentWalls.left &&
-        this.adjacentWalls.left.wallType === this.wallType
-          ? true
-          : false,
+      top: this.adjacentWalls.top ? true : false,
+      bottom: this.adjacentWalls.bottom ? true : false,
+      right: this.adjacentWalls.right ? true : false,
+      left: this.adjacentWalls.left ? true : false,
     };
 
     const adjacentToTileIndex = (
@@ -284,12 +238,8 @@ export default class Wall extends Phaser.GameObjects.Sprite {
 
     this.generateShadow();
   }
-  isTraversable(floor: number): boolean {
-    if (floor === Math.max(...this.collidesOn) + 1) return true;
-    return false;
-  }
-  isColliding(direction: Direction, floor: number): boolean {
-    if (!this.collidesOn.includes(floor)) return false;
+
+  isColliding(direction: Direction): boolean {
     if (direction === "up" && this.collideDown) return true;
     else if (direction === "down" && this.collideUp) return true;
     else if (direction === "left" && this.collideLeft) return true;
@@ -311,10 +261,8 @@ export default class Wall extends Phaser.GameObjects.Sprite {
     this.scene.events.emit("Remove from pointer", this);
     const { allWalls, allCrates } = this.scene;
 
-    for (const [pos, wall] of allWalls) {
-      if (wall === this) {
-        allWalls.delete(pos);
-      }
+    if (allWalls[this.floor].get(`${this.row},${this.col}`) === this) {
+      allWalls[this.floor].delete(`${this.row},${this.col}`);
     }
 
     allCrates.forEach((floor, index) => {

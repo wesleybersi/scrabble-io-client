@@ -264,9 +264,9 @@ class Crate extends Phaser.GameObjects.Sprite {
 
       return;
     }
-    this.shadow.setDepth(this.row + this.floor);
+    this.shadow.setDepth(this.row + this.floor * this.scene.rowCount);
     this.generateShadow();
-    this.setDepth(this.row + this.floor);
+    this.setDepth(this.row + this.floor * this.scene.rowCount);
 
     if (this.isMoving) return;
 

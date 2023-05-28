@@ -65,7 +65,7 @@ export default class Ramp extends Phaser.GameObjects.Sprite {
         return;
     }
     this.setOrigin(0.5, 0.5);
-    this.setDepth(row + floor);
+    this.setDepth(row + floor * scene.rowCount);
     this.shadow = this.scene.add.image(
       this.x + scene.shadowOffset.x,
       this.y + scene.shadowOffset.y,

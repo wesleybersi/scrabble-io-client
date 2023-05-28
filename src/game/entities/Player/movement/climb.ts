@@ -26,8 +26,8 @@ export function moveToLadder(
     targets: player,
     x: target.x,
     y: target.y,
-    ease: "Quad.In",
-    duration: 200,
+    ease: "Quad",
+    duration: 300,
     onUpdate: () => {
       if (player.state === "Dead" || mode !== "Play") {
         //When still moving while switching to editor.

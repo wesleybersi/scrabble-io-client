@@ -9,6 +9,7 @@ export function removeItem(scene: EditorScene, by: "click" | "move") {
   const wasWall = hover.object instanceof Wall;
   const position = { row: hover.object?.row, col: hover.object.col };
 
+  if (hover.object.floor > 0 && by === "move") return;
   hover.object.remove();
 
   if (wasWall) {

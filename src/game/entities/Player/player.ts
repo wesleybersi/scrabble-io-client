@@ -2,7 +2,7 @@ import Portal from "../portal";
 import Wall from "../Wall/wall";
 import MainScene from "../../scenes/Main/MainScene";
 import { Clone } from "./clone";
-import { Cardinal, Direction } from "../../types";
+import { Cardinal2D, Direction } from "../../types";
 import {
   cardinalToDirection,
   directionToCardinal,
@@ -224,7 +224,7 @@ export class Player extends Phaser.GameObjects.Sprite {
                 `${adjacent.row},${adjacent.col}`
               );
               if (crate && crate.floor === this.floor && crate.active) {
-                this.holding[side as Cardinal] = crate;
+                this.holding[side as Cardinal2D] = crate;
                 this.state = "Holding";
                 return;
               }
@@ -396,23 +396,8 @@ export class Player extends Phaser.GameObjects.Sprite {
     let additional = 0;
     if (this.z > 0) additional = 1;
 
-    this.setDepth(this.row + this.floor + additional);
+    this.setDepth(this.row + this.floor * this.scene.rowCount + additional);
     this.shadow.setDepth(this.row + this.floor + additional);
-
-    const { allWalls } = this.scene;
-
-    if (this.wallBelow && this.wallBelow.col !== this.col) {
-      this.wallBelow.alpha = 1;
-    }
-
-    this.wallBelow = allWalls.get(`${this.row + 1},${this.col}`);
-    if (
-      this.wallBelow &&
-      this.wallBelow.wallType === "wall" &&
-      this.floor === 0
-    ) {
-      this.wallBelow.alpha = 0.75;
-    }
 
     switch (this.state) {
       case "Idle":
@@ -475,7 +460,7 @@ export class Player extends Phaser.GameObjects.Sprite {
 
     for (const [side, holding] of Object.entries(this.holding)) {
       if (holding) {
-        const direction = cardinalToDirection(side as Cardinal);
+        const direction = cardinalToDirection(side as Cardinal2D);
         this.lastMove = direction;
         break;
       }

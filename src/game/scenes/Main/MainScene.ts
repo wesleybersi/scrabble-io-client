@@ -35,7 +35,11 @@ export default class MainScene extends Phaser.Scene {
     { length: this.maxFloor },
     () => new Map<string, Crate>()
   );
-  allWalls: Map<string, Wall> = new Map();
+  allWalls: Array<Map<string, Wall>> = Array.from(
+    { length: this.maxFloor },
+    () => new Map<string, Wall>()
+  ); //Each index of the array represents a floor.
+
   allRamps: Array<Map<string, Ramp>> = Array.from(
     { length: this.maxFloor },
     () => new Map<string, Ramp>()

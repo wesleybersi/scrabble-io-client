@@ -130,15 +130,15 @@ export function moveComplete(crate: Crate) {
 
       if (crate.connectedTo[oppositeSide]) return;
 
-      const wall = allWalls.get(`${crate.row},${crate.col}`);
+      const wall = allWalls[crate.floor].get(`${crate.row},${crate.col}`);
+      const wallBelow = allWalls[crate.floor - 1]?.get(
+        `${crate.row},${crate.col}`
+      );
       const crateBelow = allCrates[crate.floor - 1].get(
         `${crate.row},${crate.col}`
       );
 
-      if (
-        (!wall || (wall && Math.max(...wall.collidesOn) + 1 < crate.floor)) &&
-        !crateBelow
-      ) {
+      if (!wall && !crateBelow && !wallBelow) {
         const { cellHeight } = crate.scene;
 
         const pos = `${crate.row},${crate.col}`;

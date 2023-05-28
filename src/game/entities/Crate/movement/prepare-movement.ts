@@ -24,14 +24,14 @@ export default function prepareMovement(
     crate.col
   );
   const position = `${targetRow},${targetCol}`;
-  const targetWall = allWalls.get(position);
+  const targetWall = allWalls[crate.floor].get(position);
   const targetRamp = allRamps[crate.floor].get(position);
 
   visitedSet.add(crate);
   if (
     crate.isFalling ||
     targetRamp ||
-    (targetWall && targetWall.isColliding(direction, crate.floor))
+    (targetWall && targetWall.isColliding(direction))
   ) {
     aborted = true;
   }

@@ -18,19 +18,9 @@ const allCategories: { walls: Category; floor: Category; objects: Category } = {
     name: "Wall Tiles",
     items: [
       {
-        name: "Half Wall",
-        description: [],
-        image: "half-wall",
-      },
-      {
         name: "Wall",
         description: [],
-        image: "wall",
-      },
-      {
-        name: "Big Wall",
-        description: [],
-        image: "big-wall",
+        image: "wall-tier1",
       },
       {
         name: "Ramp",
