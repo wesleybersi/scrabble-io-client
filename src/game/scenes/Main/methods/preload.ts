@@ -1,26 +1,25 @@
 import MainScene from "../MainScene";
 
-import tilesetFloor from "../../../assets/images/tilesets/floor.png";
+import tilesetFloor from "../../../assets/images/tilesets/floor-128.png";
 
 import spritesheetPlayer from "../../../assets/images/spritesheets/player-base.png";
+import player from "../../../assets/images/tilesets/blue.png";
 
-// import spritesheetCrates from "../../../assets/images/spritesheets/crates-36.png";
-import spritesheetCrates from "../../../assets/images/spritesheets/crates-40.png";
-// import spritesheetCrates from "../../../assets/images/spritesheets/crates-48.png";
+import spritesheetCrates from "../../../assets/images/spritesheets/crates-30.png";
+import spritesheetBlocks from "../../../assets/images/tilesets/blocks-128.png";
+// import spritesheetBlocks from "../../../assets/images/tilesets/blocks-144.png";
+import spritesheetLetters from "../../../assets/images/tilesets/alphabet.png";
 
-import spritesheetHalfWall from "../../../assets/images/spritesheets/walls-40.png";
-import spritesheetWallTier2 from "../../../assets/images/spritesheets/walls-40-tier2.png";
-
-import spritesheetWall from "../../../assets/images/spritesheets/walls-56.png";
-import spritesheetBigWall from "../../../assets/images/spritesheets/walls-72.png";
+import spritesheetWalls from "../../../assets/images/spritesheets/walls.png";
 
 import spritesheetPillars from "../../../assets/images/spritesheets/pillars.png";
 
 import spritesheetWater from "../../../assets/images/spritesheets/water.png";
 
+import spritesheetAlhabetInverted from "../../../assets/images/tilesets/alphabet-inverted.png";
+
 import imageRampHorizontal from "../../../assets/images/spritesheets/ramp-h.png";
 import imageRampVertical from "../../../assets/images/spritesheets/ramp-v.png";
-import imageDrain from "../../../assets/images/grate.png";
 
 import spritesheetExplosion from "../../../assets/images/spritesheets/explosion.png";
 import spritesheetCracks from "../../../assets/images/spritesheets/wallcrack.png";
@@ -30,45 +29,50 @@ import spritesheetLadder from "../../../assets/images/spritesheets/ladder.png";
 
 import imageCornerpiece from "../../../assets/images/cornerpiece.png";
 import imageEntrance from "../../../assets/images/entrance.png";
-import imageSpikes from "../../../assets/images/spikes.png";
-import imageBubble from "../../../assets/images/bubble.png";
-
-import sfxFireBlue from "../../../assets/audio/fire-blue.wav";
-import sfxFireOrange from "../../../assets/audio/fire-orange.wav";
-import sfxRemover from "../../../assets/audio/remover.wav";
-import sfxEditMode from "../../../assets/audio/editor-mode.wav";
+import imageTint from "../../../assets/images/tilesets/tint_128.png";
 
 import sfxCreateOn from "../../../assets/audio/create-on.wav";
 import sfxCreateOff from "../../../assets/audio/create-off.wav";
-import sfxSplat from "../../../assets/audio/splat.wav";
+
+import LoadingScene from "../../Loading/LoadingScene";
+
+import shadow6 from "../../../assets/images/shadow-6.png";
+import shadow24 from "../../../assets/images/tilesets/shadow-24.png";
+
+import { CELL_HEIGHT, CELL_WIDTH } from "../constants";
 
 export default function preload(this: MainScene) {
-  const { cellWidth, cellHeight } = this;
+  this.scene.launch("Loading", this);
+  console.log("Main: Preload");
+  this.loadingScene = this.scene.get("Loading") as LoadingScene;
 
-  this.load.audio("portal-a", sfxFireBlue);
-  this.load.audio("portal-b", sfxFireOrange);
-  this.load.audio("remover", sfxRemover);
-  this.load.audio("edit-mode", sfxEditMode);
-  this.load.audio("create-on", sfxCreateOn);
-  this.load.audio("create-off", sfxCreateOff);
-  this.load.audio("splat", sfxSplat);
-
-  this.load.image("cornerpiece", imageCornerpiece);
-  this.load.image("entrance", imageEntrance);
-  this.load.image("spikes", imageSpikes);
-  this.load.image("bubble", imageBubble);
-  this.load.image("drain", imageDrain);
-
+  this.loadingScene.progress("Loading tilesets");
   //Tilesets
-  this.load.spritesheet("floor-tileset", tilesetFloor, {
-    frameWidth: cellWidth,
-    frameHeight: cellWidth,
+  this.load.spritesheet("floor", tilesetFloor, {
+    frameWidth: CELL_WIDTH,
+    frameHeight: CELL_HEIGHT,
   });
 
+  this.loadingScene.progress("Loading spritesheets");
+  this.load.image("cornerpiece", imageCornerpiece);
+  this.load.image("entrance", imageEntrance);
+
+  this.load.image("shadow-6", shadow6);
+  this.load.image("shadow-24", shadow24);
+  this.load.image("tint", imageTint);
+
   //Spritsheets
-  this.load.spritesheet("crates", spritesheetCrates, {
-    frameWidth: 32,
-    frameHeight: 40,
+  this.load.spritesheet("alphabet", spritesheetLetters, {
+    frameWidth: CELL_WIDTH,
+    frameHeight: CELL_HEIGHT,
+  });
+  this.load.spritesheet("alphabet-inverted", spritesheetAlhabetInverted, {
+    frameWidth: CELL_WIDTH,
+    frameHeight: CELL_HEIGHT,
+  });
+  this.load.spritesheet("blocks", spritesheetBlocks, {
+    frameWidth: CELL_WIDTH,
+    frameHeight: CELL_HEIGHT,
   });
   this.load.spritesheet("pillars", spritesheetPillars, {
     frameWidth: 32,
@@ -88,23 +92,9 @@ export default function preload(this: MainScene) {
     frameHeight: 64,
   });
 
-  this.load.spritesheet("wall-tier1", spritesheetHalfWall, {
-    frameWidth: 32,
-    frameHeight: 40,
-  });
-
-  this.load.spritesheet("wall-tier2", spritesheetWallTier2, {
-    frameWidth: 32,
-    frameHeight: 40,
-  });
-
-  this.load.spritesheet("wall", spritesheetWall, {
-    frameWidth: 32,
-    frameHeight: 56,
-  });
-  this.load.spritesheet("big-wall", spritesheetBigWall, {
-    frameWidth: 32,
-    frameHeight: 72,
+  this.load.spritesheet("walls", spritesheetBlocks, {
+    frameWidth: CELL_WIDTH,
+    frameHeight: CELL_HEIGHT,
   });
 
   this.load.spritesheet("water", spritesheetWater, {
@@ -112,21 +102,25 @@ export default function preload(this: MainScene) {
     frameHeight: 24,
   });
 
-  this.load.spritesheet("player", spritesheetPlayer, {
-    frameWidth: 32,
-    frameHeight: 48,
+  this.load.spritesheet("player", player, {
+    frameWidth: CELL_WIDTH,
+    frameHeight: CELL_HEIGHT,
   });
 
   this.load.spritesheet("explosion", spritesheetExplosion, {
-    frameWidth: cellWidth,
-    frameHeight: cellHeight,
+    frameWidth: CELL_WIDTH,
+    frameHeight: CELL_HEIGHT,
   });
   this.load.spritesheet("cracks", spritesheetCracks, {
-    frameWidth: cellWidth,
-    frameHeight: cellHeight,
+    frameWidth: CELL_WIDTH,
+    frameHeight: CELL_HEIGHT,
   });
   this.load.spritesheet("oil", spritesheetOil, {
-    frameWidth: cellHeight,
-    frameHeight: cellHeight,
+    frameWidth: CELL_HEIGHT,
+    frameHeight: CELL_HEIGHT,
   });
+
+  this.loadingScene.progress("Loading audio assets");
+  this.load.audio("create-on", sfxCreateOn);
+  this.load.audio("create-off", sfxCreateOff);
 }

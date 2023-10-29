@@ -1,67 +1,28 @@
 import { Player } from "../player";
 import { Direction } from "../../../types";
-import { inFrontOfPortal } from "../portals/reflection";
-import exitPortal from "../portals/exitPortal";
-import tweenIntoVoid from "./tween-into-void";
+import { CELL_HEIGHT, CELL_WIDTH } from "../../../scenes/Main/constants";
 
-export default function tweenToTile(
-  player: Player,
-  col: number,
-  row: number,
-  floor: number
-) {
-  if (player.state === "Dead") return;
-  const { cellWidth, cellHeight, mode } = player.scene;
-  if (player.portalClone) {
-    exitPortal(player);
-  }
-  if (player.portalReflection) {
-    inFrontOfPortal(player);
-  }
-
+export default function tweenToTile(player: Player, col: number, row: number) {
   const target = {
-    x: Math.floor(col * cellWidth) + cellWidth / 2,
-    y: Math.floor(row * cellHeight),
+    x: Math.floor(col * CELL_WIDTH) + CELL_WIDTH / 2,
+    y: Math.floor(row * CELL_HEIGHT) + CELL_HEIGHT / 2,
   };
-  target.y -= player.z;
 
-  const tween = player.scene.tweens.add({
+  player.scene.tweens.add({
     targets: player,
     x: target.x,
     y: target.y,
-    ease: player.ease,
+    ease: "Linear",
     duration: player.moveDuration,
-    onUpdate: () => {
-      if (player.state === "Dead" || mode !== "Play") {
-        //When still moving while switching to editor.
-        tween.remove();
-        player.resetToOrigin();
-        return;
-      }
-    },
     onComplete: () => {
-      if (player.state === "Falling") {
-        tweenIntoVoid(player, col, row);
-        return;
-      }
-
-      if (player.state === "Dead") return;
-
-      if (player.portalClone) {
-        player.x = player.portalClone.to.col * cellWidth + cellWidth / 2;
-        player.y = player.portalClone.to.row * cellHeight;
-        player.portalClone.destroy();
-        player.portalClone = null;
-      } else {
-        player.x = target.x;
-        player.y = target.y;
-      }
-      player.row = Math.floor(player.y + player.z) / cellHeight;
-      player.col = Math.floor(player.x - cellWidth / 2) / cellWidth;
+      player.x = target.x;
+      player.y = target.y;
+      player.row = Math.floor(player.y - CELL_HEIGHT / 2) / CELL_HEIGHT;
+      player.col = Math.floor(player.x - CELL_WIDTH / 2) / CELL_WIDTH;
 
       if (player.state === "Pulling" || player.state === "Pushing") {
         let stillHolding = false;
-        for (const [side, hold] of Object.entries(player.holding)) {
+        for (const [, hold] of Object.entries(player.holding)) {
           if (hold) {
             player.state = "Holding";
             stillHolding = true;
@@ -71,15 +32,6 @@ export default function tweenToTile(
         if (!stillHolding) player.state = "Idle";
       } else {
         player.state = "Idle";
-      }
-
-      const { floor } = player.scene.tilemap;
-      const floorTile = floor.getTileAt(player.col, player.row);
-
-      switch (floorTile.properties.name) {
-        case "Lava":
-          player.state = "Dead";
-          break;
       }
 
       for (const [direction, playerInput] of Object.entries(player.moving)) {

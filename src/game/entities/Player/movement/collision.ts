@@ -1,373 +1,64 @@
-import { Player } from "../player";
-import Crate from "../../Crate/crate";
-
-import { Direction, Cardinal, Cardinal2D } from "../../../types";
+import { Direction, Cardinal } from "../../../types";
 import {
-  getOppositeSide,
-  directionToCardinal,
-  directionToAdjacent,
   cardinalToDirection,
+  directionToCardinal,
   getOppositeDirection,
 } from "../../../utils/helper-functions";
-
-import { setPortalReflection } from "../portals/reflection";
-import redirectTargetToPortal from "../portals/redirectTarget";
+import { Player } from "../player";
+import Wall from "../../Wall/wall";
+import Letter from "../../Letter/letter";
 
 //Function that returns true if player is unable to move.
-//Object interaction is taken care of along the way.
+//Also takes care of crates
 export function isObstructed(player: Player, direction: Direction): boolean {
-  const {
-    portals,
-    allCrates,
-    allWalls,
-    allRamps,
-    rowCount,
-    colCount,
-    tilemap,
-  } = player.scene;
+  player.detectAdjacent();
+  let directTarget = player.adjacent[directionToCardinal(direction)];
 
-  if (player.row % 1 != 0 || player.col % 1 !== 0) return true;
-
-  const { floor } = tilemap;
-  let side = getOppositeSide(directionToCardinal(direction));
-  const { row: targetRow, col: targetCol } = directionToAdjacent(
-    direction,
-    player.row,
-    player.col
-  );
-  const pullDirection = direction;
-  if (targetRow < 0 || targetRow >= rowCount) return true; //Out of bounds
-  if (targetCol < 0 || targetCol >= colCount) return true; //Out of bounds
-
-  const targetPos = `${targetRow},${targetCol}`;
-
-  let targetFloor = floor.getTileAt(targetCol, targetRow);
-  let targetWall = allWalls[player.floor].get(targetPos);
-  let targetRamp = allRamps[player.floor].get(targetPos);
-  let targetCrate = allCrates[player.floor].get(targetPos)?.active
-    ? allCrates[player.floor].get(targetPos)
-    : undefined;
-
-  //If portals are active, new target?
-  if (portals.a && portals.b) {
-    //If standing in front of portal, and other portal is on floor
-    setPortalReflection(player, direction, targetRow, targetCol, portals);
-
-    const { newTarget, newSide, newDirection, invalid } =
-      redirectTargetToPortal(player, targetRow, targetCol, side, portals);
-
-    if (!invalid) {
-      side = newSide;
-      direction = newDirection;
-
-      targetFloor = tilemap.floor.getTileAt(newTarget.col, newTarget.row);
-      targetWall = allWalls[player.floor].get(
-        `${newTarget.row},${newTarget.col}`
-      );
-      targetRamp = allRamps[player.floor].get(
-        `${newTarget.row},${newTarget.col}`
-      );
-      targetCrate = allCrates[player.floor].get(
-        `${newTarget.row},${newTarget.col}`
-      );
-      if (targetCrate && !targetCrate.active) targetCrate = undefined;
-    }
+  if (!directTarget && player.state !== "Holding") return false;
+  if (directTarget instanceof Wall) {
+    if (directTarget.isColliding(direction)) return true;
   }
 
-  //Ramps
-  //ANCHOR Currently on ramp
-  let isOnRamp = false;
-  const currentRamp = allRamps[player.floor].get(`${player.row},${player.col}`);
-  const { floorHeight } = player.scene;
-  if (currentRamp && currentRamp.floor === player.floor) {
-    if (
-      currentRamp.low.row === player.row &&
-      currentRamp.low.col === player.col
-    ) {
-      if (direction === currentRamp.direction) {
-        //If moving up the ramp
-        player.z = currentRamp.high.zValue;
-      } else if (direction === getOppositeDirection(currentRamp.direction)) {
-        //If moving down > off the ramp
-        player.z = player.floor * floorHeight;
-      } else return true;
-    } else if (
-      currentRamp.high.row === player.row &&
-      currentRamp.high.col === player.col
-    ) {
-      if (direction === currentRamp.direction) {
-        if ((targetWall && targetWall.isTraversable) || targetCrate) {
-          //If moving to next floor
-          //Next floor approved
-          player.floor++;
-          player.z = player.floor * floorHeight;
-
-          targetWall = undefined;
-          targetCrate = allCrates[player.floor].get(
-            `${targetRow},${targetCol}`
-          );
-        } else return true;
-      } else if (direction === getOppositeDirection(currentRamp.direction)) {
-        //If moving down the ramp
-        player.z = currentRamp.low.zValue;
-      } else return true;
-    }
-    isOnRamp = true;
-  }
-
-  //ANCHOR Entering ramp
-  if (!isOnRamp) {
-    if (!targetRamp && player.floor > 0) {
-      //If no ramp on the current floor. It will look for a ramp on the floor below.
-      //The one's going down are always on the floor below.
-      targetRamp = allRamps[player.floor - 1].get(targetPos);
-    }
-    if (targetRamp) {
-      if (
-        targetRamp.low.row === targetRow &&
-        targetRamp.low.col === targetCol
-      ) {
-        //If entering ramp from below
-        if (direction === targetRamp.direction)
-          player.z = targetRamp.low.zValue;
-        else return true;
-      } else if (
-        targetRamp.high.row === targetRow &&
-        targetRamp.high.col === targetCol &&
-        player.floor > 0
-      ) {
-        //If entering ramp from above
-        if (direction === getOppositeDirection(targetRamp.direction)) {
-          //When you enter, floor gets reduced
-          //Previous floor approved
-          player.floor--;
-          return false;
-        } else return true;
-      } else return true;
-    }
-  }
-
-  const currentWall = allWalls[player.floor - 1]?.get(
-    `${player.row},${player.col}`
-  );
-  console.log(currentWall);
-  if (currentWall && currentWall.isTraversable) {
-    if (currentWall.hasLadder.bottom && direction === "down") {
-      player.enterLadder = true;
-      player.ladder = currentWall.ladder;
-      player.ladderMovement = "down";
-      return false;
-    }
-  }
-
-  if (
-    !isOnRamp &&
-    player.floor > 0 &&
-    !targetWall &&
-    !targetCrate &&
-    !targetRamp
-  ) {
-    //Check floor below, for traversable crate
-    const crate = allCrates[player.floor - 1].get(targetPos)?.active
-      ? allCrates[player.floor - 1].get(targetPos)
-      : undefined;
-    if (crate) return false;
-    console.log("Air Collision");
-    if (currentWall && currentWall.isTraversable) return false;
-    return true;
-  }
-
-  if (targetWall) {
-    if (!player.ladder) {
-      if (targetWall.hasLadder.bottom) {
-        if (direction === "up") {
-          player.enterLadder = true;
-          player.ladder = targetWall.ladder;
-          player.ladderMovement = "up";
-          return false;
-        }
-      }
-    }
-    if (targetWall.isColliding(direction)) return true;
-    console.log("Wall Collision");
-  }
-
-  if (player.floor === 0 && targetFloor) {
-    switch (targetFloor.properties.name) {
-      case "Void":
-        player.state = "Falling";
-        return false;
-        break;
-      case "Water":
-        return true;
-      case "Ice": {
-        console.log("Ice forcing movement", direction);
-
-        const cornerPiece = targetFloor.properties.cornerPiece;
-
-        if (!targetCrate) {
-          if (!cornerPiece) {
-            player.forceMovement[direction] = true;
-          } else if (cornerPiece) {
-            if (cornerPiece.direction === "TopLeft") {
-              if (direction === "up") {
-                player.forceMovement.right = true;
-              } else if (direction === "left") {
-                player.forceMovement.down = true;
-              } else {
-                player.forceMovement[direction] = true;
-              }
-            } else if (cornerPiece.direction === "TopRight") {
-              if (direction === "up") {
-                player.forceMovement.left = true;
-              } else if (direction === "right") {
-                player.forceMovement.down = true;
-              } else {
-                player.forceMovement[direction] = true;
-              }
-            } else if (cornerPiece.direction === "BottomLeft") {
-              if (direction === "down") {
-                player.forceMovement.right = true;
-              } else if (direction === "left") {
-                player.forceMovement.up = true;
-              } else {
-                player.forceMovement[direction] = true;
-              }
-            } else if (cornerPiece.direction === "BottomRight") {
-              if (direction === "down") {
-                player.forceMovement.left = true;
-              } else if (direction === "right") {
-                player.forceMovement.up = true;
-              } else {
-                player.forceMovement[direction] = true;
-              }
-            }
-          }
-
-          player.state = "Sliding";
-          player.moveDuration = Math.floor(player.initialMoveDuration / 1.5);
-        }
-      }
-    }
-  }
-
-  let usePullDirection = false;
-  let heldCrate: Crate | undefined = undefined;
+  //ANCHOR Pulling
+  let heldLetter: Letter | undefined = undefined;
   if (player.state === "Holding") {
-    for (const [side, crate] of Object.entries(player.holding)) {
-      if (crate && !crate.active) continue;
-      if (crate) {
-        if (
-          direction !== cardinalToDirection(side as Cardinal) &&
-          direction !==
-            getOppositeDirection(cardinalToDirection(side as Cardinal))
-        )
-          return true;
-        usePullDirection = true;
-        heldCrate = crate;
-      } else if (targetCrate === crate) {
-        heldCrate = crate;
+    for (const [side, letter] of Object.entries(player.holding)) {
+      if (!letter || (letter && !letter.active)) continue;
+
+      if (
+        direction !==
+        getOppositeDirection(cardinalToDirection(side as Cardinal))
+      ) {
         player.state = "Idle";
-        player.holding[side as Cardinal2D] = null;
+        break;
       }
-    }
-    if (heldCrate) {
-      if (targetCrate && targetCrate !== heldCrate) {
+
+      heldLetter = letter;
+
+      if (directTarget) {
+        //If object behind
         console.log("Cant push and pull");
         return true;
-      } else if (targetCrate === heldCrate) {
-        player.state = "Idle";
-        player.holding[side as Cardinal2D] = null;
       } else {
-        targetCrate = heldCrate;
+        directTarget = heldLetter;
+        break;
       }
     }
   }
-  console.log(player.floor);
-  console.log(targetCrate);
 
-  if (targetCrate) {
-    if (!targetCrate.active) return true;
-    if (!targetCrate.hasInteraction) return true;
-    if (targetCrate.isFalling) return true;
-    if (targetCrate.isMoving) return true;
-    if (targetCrate.floor !== player.floor) return true;
-    const { allIncluded, abort } = targetCrate.prepareMovement(
-      usePullDirection ? pullDirection : direction
-    );
+  if (directTarget instanceof Letter) {
+    if (!directTarget.active) return true;
+    if (directTarget.isMoving) return true;
+    if (directTarget.isCalculating) return true;
+    if (directTarget.letter === "?") directTarget.setRandomLetter();
 
-    if (abort) {
-      console.log("Aborted");
-      return true;
-    }
-
-    // const movableEnteringPortal = Array.from(allIncluded).find(
-    //   (movable) => movable.portalTrigger
-    // );
-
-    const portalSet = new Set<Crate>();
-    // let portalDirection: Direction = direction;
-    // if (movableEnteringPortal && movableEnteringPortal.portalTrigger) {
-    //   const portalPosition = `${movableEnteringPortal.portalTrigger.to.row},${movableEnteringPortal.portalTrigger.to.col}`;
-    //   const portalTarget = allObjects.get(portalPosition);
-
-    //   if (portalTarget && portalTarget instanceof Movable) {
-    //     const { allIncluded, abort } = portalTarget.prepareMovement(
-    //       movableEnteringPortal.portalTrigger.direction
-    //     );
-    //     if (abort) {
-    //       console.log("Aborted by portalset");
-    //       return true;
-    //     }
-    //     portalSet = allIncluded;
-    //     portalDirection = movableEnteringPortal.portalTrigger.direction;
-    //   }
-    // }
-
-    let weightMultiplier = 1;
-    for (const crate of allIncluded) {
-      if (crate.weight > weightMultiplier) weightMultiplier = crate.weight;
-    }
-
-    const completedTweens = new Set<Crate>();
-
-    const duration = Math.max(
-      Math.sqrt(allIncluded.size + portalSet.size) * player.moveDuration * 0.5,
-      player.moveDuration
-    );
-
-    for (const crate of allIncluded) {
-      if (crate.state === "Moving") return true;
-      crate.makeMove(
-        usePullDirection ? pullDirection : direction,
-        allIncluded,
-        duration * weightMultiplier,
-        completedTweens,
-        true
-      );
-    }
-    // const completedPortalTweens = new Set<Crate>();
-    // if (portalSet.size > 0) {
-    //   for (const obj of portalSet) {
-    //     if (obj.moving) return true;
-    //     obj.move(portalDirection, portalSet, duration, completedPortalTweens);
-    //   }
-    // }
-    player.moveDuration = duration * weightMultiplier;
-    player.ease = "Linear";
-
-    // if (targetCrate.crateType === "Metal") return true;
+    const { abort, duration } = directTarget.attemptMove(direction);
+    if (abort) return true;
+    player.inMovement = true;
+    player.moveDuration = duration ?? player.moveDuration;
 
     if (player.state === "Holding") player.state = "Pulling";
     else player.state = "Pushing";
-
-    if (
-      player.state === "Pushing" &&
-      targetCrate.crateType.includes("Pillar")
-    ) {
-      // return true;
-    }
-
     return false;
   }
   return false;

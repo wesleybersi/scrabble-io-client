@@ -3,7 +3,7 @@ import MainScene from "../scenes/Main/MainScene";
 import { Cardinal, Direction } from "../types";
 import { Player } from "./Player/player";
 import Laser from "./Laser/laser";
-import Crate from "./Crate/crate";
+import Crate from "./Letter/letter";
 import Wall from "./Wall/wall";
 import Ramp from "./ramp";
 import Drain from "./drain";

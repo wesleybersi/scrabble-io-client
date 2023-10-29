@@ -2,9 +2,9 @@ import { useRef, useEffect } from "react";
 import useWindowSize from "../hooks/useWindowSize";
 import * as Phaser from "phaser";
 import MainScene from "./scenes/Main/MainScene";
-import { EditorScene } from "./scenes/Editor/EditorScene";
 
-import { create } from "zustand";
+import LoadingScene from "./scenes/Loading/LoadingScene";
+import LandingScene from "./scenes/Landing/LandingScene";
 
 const Game = () => {
   const gameRef = useRef<HTMLDivElement | null>(null);
@@ -26,13 +26,13 @@ const Game = () => {
       },
       zoom: window.devicePixelRatio,
       parent: "phaser-game",
-      backgroundColor: "#ffffff",
-      scene: [MainScene, EditorScene],
-      pixelArt: true,
+      backgroundColor: "#2E4C5B",
+      scene: [LandingScene, MainScene, LoadingScene],
+
       render: {
         antialias: true,
-        pixelArt: true,
-        roundPixels: true,
+        pixelArt: false,
+        roundPixels: false,
       },
     };
 

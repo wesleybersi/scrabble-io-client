@@ -6,8 +6,6 @@ export function getOppositeSide(cardinal: Cardinal) {
     bottom: "top",
     left: "right",
     right: "left",
-    above: "below",
-    below: "above",
   };
   return oppositeMap[cardinal];
 }
@@ -140,4 +138,51 @@ export function isWithinGrace(
   grace: number
 ): boolean {
   return value > target - grace && value < target + grace;
+}
+
+export function isInViewport(
+  row: number,
+  col: number,
+  viewport: {
+    startRow: number;
+    startCol: number;
+    visibleRows: number;
+    visibleCols: number;
+  }
+) {
+  return (
+    row >= viewport.startRow &&
+    row <= viewport.startRow + viewport.visibleRows &&
+    col >= viewport.startCol &&
+    col <= viewport.startCol + viewport.visibleCols
+  );
+}
+
+export function generateRandomColor() {
+  const randomColor = Math.floor(Math.random() * 0xffffff); // Generate a random number between 0 and 16777215 (0xFFFFFF in decimal)
+  const alpha = 0; // Set the desired alpha value
+
+  // Extract the RGB channels from the random color
+  const red = (randomColor >> 16) & 0xff;
+  const green = (randomColor >> 8) & 0xff;
+  const blue = randomColor & 0xff;
+
+  // Calculate the lighter color by interpolating between each RGB channel and 255 (full brightness)
+  const lighterRed = Math.floor(red + (255 - red) * alpha);
+  const lighterGreen = Math.floor(green + (255 - green) * alpha);
+  const lighterBlue = Math.floor(blue + (255 - blue) * alpha);
+
+  // Combine the modified RGB channels to form the lighter color
+  const lighterColor = (lighterRed << 16) | (lighterGreen << 8) | lighterBlue;
+
+  return lighterColor;
+}
+
+export function oneIn(chance: number): boolean {
+  if (!Math.floor(Math.random() * chance)) return true;
+  return false;
+}
+
+export function randomNum(num: number): number {
+  return Math.floor(Math.random() * num);
 }

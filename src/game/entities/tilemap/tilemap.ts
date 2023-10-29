@@ -1,27 +1,23 @@
+import { CELL_HEIGHT, CELL_WIDTH } from "../../scenes/Main/constants";
 import MainScene from "../../scenes/Main/MainScene";
-import CornerPiece from "../cornerpiece";
 
 export default class BasicTilemap {
   scene: MainScene;
   floorMap: Phaser.Tilemaps.Tilemap;
   floorTiles!: Phaser.Tilemaps.Tileset;
-  wallTiles!: Phaser.Tilemaps.Tileset;
   floor!: Phaser.Tilemaps.TilemapLayer;
   constructor(scene: MainScene) {
     this.scene = scene as MainScene;
-    //The map keeping track of all the layers
     this.floorMap = scene.make.tilemap({
-      tileWidth: scene.cellWidth,
-      tileHeight: scene.cellHeight,
+      tileWidth: CELL_WIDTH,
+      tileHeight: CELL_HEIGHT,
       width: scene.colCount,
       height: scene.rowCount,
     });
 
-    //The tiles in PNG
-    const floorTiles = this.floorMap.addTilesetImage("floor-tileset");
+    const floorTiles = this.floorMap.addTilesetImage("floor");
     if (floorTiles) this.floorTiles = floorTiles;
 
-    //Where base tiles like walls and floor tiles are placed
     const baseLayer = this.floorMap.createBlankLayer(
       "Base Layer",
       this.floorTiles,
@@ -29,8 +25,8 @@ export default class BasicTilemap {
       0,
       scene.colCount,
       scene.rowCount,
-      32,
-      32
+      CELL_WIDTH,
+      CELL_HEIGHT
     );
 
     if (baseLayer) this.floor = baseLayer;
@@ -40,62 +36,38 @@ export default class BasicTilemap {
     this.placeInitialTiles();
   }
 
-  placeVoid(col: number, row: number) {
-    const newTile = this.floor.putTileAt(0, col, row);
-    newTile.setCollision(false, false, false, false);
-    newTile.properties = { name: "Void" };
-  }
-
   placeEmptyFloorTile(col: number, row: number) {
-    const newTile = this.floor.putTileAt(1, col, row);
-    newTile.setCollision(false, false, false, false);
-    newTile.properties = { name: "Empty" };
-    newTile.alpha = 0.65;
-  }
-
-  placeIceTile(col: number, row: number) {
-    const newTile = this.floor.putTileAt(2, col, row);
-    newTile.setCollision(false, false, false, false);
-    newTile.properties = { name: "Ice" };
-    newTile.alpha = 0.85;
-  }
-
-  placeLavaTile(col: number, row: number) {
-    const newTile = this.floor.putTileAt(3, col, row);
-    newTile.setCollision(false, false, false, false);
-    newTile.properties = { name: "Lava" };
-    newTile.alpha = 0.85;
-  }
-
-  addCornerPiece(col: number, row: number) {
-    const { cellWidth, cellHeight } = this.scene;
-    const iceTile = this.floor.getTileAt(col, row);
-    const cornerPiece = iceTile.properties.cornerPiece;
-    if (cornerPiece) {
-      if (cornerPiece.direction === "TopLeft")
-        cornerPiece.rotatePiece("TopRight");
-      else if (cornerPiece.direction === "TopRight")
-        cornerPiece.rotatePiece("BottomRight");
-      else if (cornerPiece.direction === "BottomRight")
-        cornerPiece.rotatePiece("BottomLeft");
-      else if (cornerPiece.direction === "BottomLeft")
-        cornerPiece.rotatePiece("TopLeft");
-    } else {
-      iceTile.properties.cornerPiece = new CornerPiece(
-        this.scene,
-        "TopLeft",
-        col * cellWidth + cellWidth / 2,
-        row * cellHeight + cellHeight / 2,
-        row,
-        col,
-        iceTile
-      );
-    }
+    const newTile = this.floor.putTileAt(0, col, row);
+    if (!newTile) return;
+    newTile.alpha = Math.max(Math.random() * 0.1, 0.05);
   }
 
   placeInitialTiles() {
+    const doubleWord = { chance: 250, color: 0xad4052 };
+    const tripleWord = { chance: 500, color: 0xefc350 };
+    const doubleLetter = { chance: 250, color: 0x489ad9 };
+    const tripleLetter = { chance: 500, color: 0x6de36b };
+
     this.floor.forEachTile((tile) => {
+      // if (!Math.floor(Math.random() * doubleWord.chance)) {
+      //   const newTile = this.floor.putTileAt(0, tile.x, tile.y);
+      //   newTile.properties = { multiplier: "Double Word" };
+      //   newTile.tint = doubleWord.color;
+      // } else if (!Math.floor(Math.random() * tripleWord.chance)) {
+      //   const newTile = this.floor.putTileAt(0, tile.x, tile.y);
+      //   newTile.properties = { multiplier: "Triple Word" };
+      //   newTile.tint = tripleWord.color;
+      // } else if (!Math.floor(Math.random() * doubleLetter.chance)) {
+      //   const newTile = this.floor.putTileAt(0, tile.x, tile.y);
+      //   newTile.properties = { multiplier: "Double Letter" };
+      //   newTile.tint = doubleLetter.color;
+      // } else if (!Math.floor(Math.random() * tripleLetter.chance)) {
+      //   const newTile = this.floor.putTileAt(0, tile.x, tile.y);
+      //   newTile.properties = { multiplier: "Triple Letter" };
+      //   newTile.tint = tripleLetter.color;
+      // } else {
       this.placeEmptyFloorTile(tile.x, tile.y);
+      // }
     });
   }
 }
