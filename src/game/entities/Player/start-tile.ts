@@ -10,7 +10,7 @@ export default class Start extends Phaser.GameObjects.Sprite {
       scene as MainScene,
       col * CELL_WIDTH + CELL_WIDTH / 2,
       row * CELL_HEIGHT + CELL_HEIGHT / 2,
-      "alphabet-inverted",
+      "alphabet",
       26
     );
     this.alpha = 0.5;
@@ -21,6 +21,7 @@ export default class Start extends Phaser.GameObjects.Sprite {
     this.scene = scene;
     this.setOrigin(0.5, 0.5);
     this.setDepth(1);
+    this.setAlpha(0);
     scene.add.existing(this);
   }
   update() {

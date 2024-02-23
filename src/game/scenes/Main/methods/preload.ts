@@ -2,8 +2,14 @@ import MainScene from "../MainScene";
 
 import tilesetFloor from "../../../assets/images/tilesets/floor-128.png";
 
+import pointerOpen from "../../../assets/images/openhand.png";
+import pointerGrab from "../../../assets/images/grabhand.png";
+import pointerPoint from "../../../assets/images/pointer.png";
+import pointerScroll from "../../../assets/images/scroll.png";
+
 import spritesheetPlayer from "../../../assets/images/spritesheets/player-base.png";
-import player from "../../../assets/images/tilesets/blue.png";
+import player from "../../../assets/images/tilesets/circle.png";
+import smoke from "../../../assets/images/tilesets/smoke.png";
 
 import spritesheetCrates from "../../../assets/images/spritesheets/crates-30.png";
 import spritesheetBlocks from "../../../assets/images/tilesets/blocks-128.png";
@@ -60,6 +66,11 @@ export default function preload(this: MainScene) {
   this.load.image("shadow-6", shadow6);
   this.load.image("shadow-24", shadow24);
   this.load.image("tint", imageTint);
+  this.load.image("smoke", smoke);
+  this.load.image("pointer-open", pointerOpen);
+  this.load.image("pointer-grab", pointerGrab);
+  this.load.image("pointer-point", pointerPoint);
+  this.load.image("pointer-scroll", pointerScroll);
 
   //Spritsheets
   this.load.spritesheet("alphabet", spritesheetLetters, {

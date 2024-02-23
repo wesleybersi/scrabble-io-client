@@ -1,5 +1,5 @@
 import Wall from "./entities/Wall/wall";
-import Crate from "./entities/Letter/letter";
+import Crate from "./entities/Tile/letter";
 import Ramp from "./entities/ramp";
 
 export type HoverTarget = Wall | Ramp | Crate;

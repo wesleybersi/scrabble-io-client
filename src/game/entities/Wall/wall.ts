@@ -2,21 +2,20 @@ import MainScene from "../../scenes/Main/MainScene";
 import { CELL_HEIGHT, CELL_WIDTH } from "../../scenes/Main/constants";
 import { Direction } from "../../types";
 import { getAdjacentTiles } from "../../utils/helper-functions";
-import Letter from "../Letter/letter";
+import Tile from "../Tile/letter";
 import autoTile from "./draw/auto-tile";
 import drawShadow from "./draw/draw-shadow";
 
 export default class Wall extends Phaser.GameObjects.Sprite {
   scene: MainScene;
-  shadow!: Phaser.GameObjects.Image;
-  shadowMask!: Phaser.GameObjects.Graphics;
+  shadowGraphic!: Phaser.GameObjects.Image;
   row: number;
   col: number;
   adjacent!: {
-    top: Wall | Letter | undefined;
-    bottom: Wall | Letter | undefined;
-    right: Wall | Letter | undefined;
-    left: Wall | Letter | undefined;
+    top: Wall | Tile | undefined;
+    bottom: Wall | Tile | undefined;
+    right: Wall | Tile | undefined;
+    left: Wall | Tile | undefined;
   };
   connectedTo = {
     top: false,
@@ -45,9 +44,10 @@ export default class Wall extends Phaser.GameObjects.Sprite {
     this.row = row;
     this.col = col;
 
-    this.setDepth(row);
+    this.setDepth(this.y + 3);
     this.setOrigin(0.5);
-    this.setTint(0x2c3b48);
+    // this.setTint(0x2c3b48);
+    this.setTint(0x5e686e);
 
     scene.allWalls.set(`${row},${col}`, this);
     scene.events.on("Connect Walls", (row: number, col: number) => {
@@ -64,7 +64,7 @@ export default class Wall extends Phaser.GameObjects.Sprite {
 
   update() {
     if (!this.active) return;
-    const { allWalls, allLetters } = this.scene;
+    const { allWalls, tilesByPosition: allLetters } = this.scene;
 
     const adjacentTiles = getAdjacentTiles(this.row, this.col);
     const { top, bottom, right, left } = adjacentTiles;

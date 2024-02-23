@@ -1,57 +1,29 @@
 import MainScene from "../../scenes/Main/MainScene";
-import { Cardinal, Direction } from "../../types";
-import {
-  cardinalToDirection,
-  generateRandomColor,
-  getAdjacentTiles,
-  getOppositeDirection,
-} from "../../utils/helper-functions";
-import { allCardinalsNull, allDirectionsFalse } from "../../utils/constants";
-import Letter from "../Letter/letter";
-//Methods
-import handleMovement from "./movement/move";
-import { ValidWord } from "../Letter/calculation/word-combinations";
-import Wall from "../Wall/wall";
 import { CELL_HEIGHT, CELL_WIDTH } from "../../scenes/Main/constants";
-import Start from "./start-tile";
-import { start } from "repl";
-
+import { oneIn } from "../../utils/helper-functions";
+import { Hands } from "./hands";
 export class Player extends Phaser.GameObjects.Sprite {
   scene: MainScene;
-  startPosition: Start;
+  id: string;
+  name: string;
   shadow!: Phaser.GameObjects.Sprite;
-  shadowMask!: Phaser.GameObjects.Graphics;
   rotationTween: Phaser.Tweens.Tween | null = null;
-  hasReset = false;
-  score = 0;
-  moveDuration = 150;
-  inMovement = false;
-  moving: Direction[] = [];
-  forceMovement = { left: false, right: false, up: false, down: false };
-  lastMove: Direction = "up";
-  state: "Idle" | "Moving" | "Pushing" | "Holding" | "Pulling" | "Disabled" =
-    "Idle";
+  movementTween: Phaser.Tweens.Tween | null = null;
+  predictionTween: Phaser.Tweens.Tween | null = null;
+  particles?: Phaser.GameObjects.Particles.ParticleEmitter;
+  hands: Hands;
+  facing: "up" | "down" | "left" | "right" = "up";
   row: number;
   col: number;
-  adjacent!: {
-    top: Letter | Wall | undefined;
-    right: Letter | Wall | undefined;
-    bottom: Letter | Wall | undefined;
-    left: Letter | Wall | undefined;
-  };
-  holding!: {
-    top: Letter | null;
-    right: Letter | null;
-    bottom: Letter | null;
-    left: Letter | null;
-  };
-  facing: "up" | "down" | "left" | "right" = "up";
-  isSliding = false;
-  move = handleMovement;
-  color = generateRandomColor();
-  validWords: ValidWord[] = [];
-  longestWord = "";
-  constructor(scene: MainScene, row: number, col: number) {
+  color: number;
+  constructor(
+    scene: MainScene,
+    id: string,
+    name: string,
+    color: number,
+    row: number,
+    col: number
+  ) {
     super(
       scene as MainScene,
       col * CELL_WIDTH + CELL_WIDTH / 2,
@@ -60,25 +32,19 @@ export class Player extends Phaser.GameObjects.Sprite {
       0
     );
     this.scene = scene;
-    this.name = "Player";
+    this.name = name;
+    this.id = id;
+    this.color = color;
     this.row = row;
     this.col = col;
-    this.startPosition = new Start(scene, row, col);
-    this.holding = { top: null, right: null, bottom: null, left: null };
-    this.adjacent = {
-      top: undefined,
-      right: undefined,
-      bottom: undefined,
-      left: undefined,
-    };
     this.shadow = this.scene.add.sprite(this.x, this.y, "player");
-    this.shadowMask = this.scene.add.graphics();
-    this.enableMovement();
+    this.hands = new Hands(scene, this);
+    this.setAlpha(0);
 
     this.setOrigin(0.5);
-
-    // this.createAnimations();
+    this.setTint(this.color);
     this.generateShadow();
+    this.setDepth(this.row + 1);
 
     this.setScale(0);
     this.scene.tweens.add({
@@ -86,175 +52,103 @@ export class Player extends Phaser.GameObjects.Sprite {
       scale: 1,
       duration: 250,
       onComplete: () => {
-        this.setScale(1);
-        this.scene.tweens.add({
-          targets: this,
-          scale: 1.25,
-          duration: 750,
-          yoyo: true,
-          repeat: Infinity,
-        });
+        this.setScale(0.65);
+        this.shadow.setScale(0.65);
+        this.shadow.setAlpha(0);
+
+        // this.setScale(1);
+        // this.shadow.setScale();
+        // this.scene.tweens.add({
+        //   targets: this,
+        //   scale: 1.25,
+        //   duration: 750,
+        //   yoyo: true,
+        //   repeat: Infinity,
+        // });
       },
     });
 
     scene.add.existing(this);
   }
   generateShadow() {
+    return;
     this.shadow.x = this.x;
-    this.shadow.y = this.y + 16 + 12;
-    this.shadow.alpha = 0.15;
+    this.shadow.y = this.y + 12;
     this.shadow.setDepth(this.depth - 1);
     this.shadow.setTint(0x000000);
   }
+  move(
+    target: { row: number; col: number },
+    duration: number,
+    isPush: boolean,
+    isPull: boolean,
+    onMovementComplete?: (row: number, col: number) => void
+  ) {
+    if (this.movementTween) return;
+    // if (this.id === this.scene.socketID && this.scene.isMoving) return;
+    const { row, col } = target;
+    const x = col * CELL_WIDTH + CELL_WIDTH / 2;
+    const y = row * CELL_HEIGHT + CELL_HEIGHT / 2;
 
-  enableMovement() {
-    this.scene.input.keyboard?.on("keydown", (event: KeyboardEvent) => {
-      for (const [, movementForced] of Object.entries(this.forceMovement)) {
-        if (movementForced) return;
-      }
+    this.movementTween = this.scene.tweens.add({
+      targets: [this, this.hands],
+      // ease: "linear",
+      x,
+      y,
+      duration,
+      onStart: () => {
+        if (row < this.row) this.facing = "up";
+        if (row > this.row) this.facing = "down";
+        if (col < this.col) this.facing = "left";
+        if (col > this.col) this.facing = "right";
+        if (isPush) console.log("Pushing");
+        if (isPull) console.log("Pulling");
+        if (!isPush && !isPull) this.hands.movement(duration);
+        else this.hands.pushOrPull(duration);
+      },
+      onUpdate: () => {
+        this.setDepth(this.row + 3);
+        this.shadow.setDepth(this.row + 1);
+        this.generateShadow();
+        this.rotate(duration, isPull);
 
-      switch (event.key) {
-        case "W":
-        case "w":
-        case "ArrowUp":
-          if (!this.moving.includes("up")) this.moving.unshift("up");
-          this.move();
-          break;
-        case "A":
-        case "a":
-        case "ArrowLeft":
-          if (!this.moving.includes("left")) this.moving.unshift("left");
-
-          this.move();
-          break;
-        case "S":
-        case "s":
-        case "ArrowDown":
-          if (!this.moving.includes("down")) this.moving.unshift("down");
-
-          this.move();
-          break;
-        case "D":
-        case "d":
-        case "ArrowRight":
-          if (!this.moving.includes("right")) this.moving.unshift("right");
-
-          this.move();
-          break;
-        case "R":
-        case "r":
-          this.resetToOrigin();
-          break;
-        case "Shift":
-          {
-            this.detectAdjacent();
-
-            const targets = Object.entries(this.adjacent).filter(
-              ([, adjacent]) =>
-                adjacent && adjacent.active && adjacent instanceof Letter
-            ) as [Cardinal, Letter][];
-
-            for (const [side, target] of targets) {
-              const direction = cardinalToDirection(side as Cardinal);
-              if (this.facing === direction) {
-                this.holding[side] = target;
-                this.state = "Holding";
-                // this.moving = this.facing;
-                if (!this.moving.includes(this.facing))
-                  this.moving.unshift(this.facing);
-              } else if (targets.length === 1) {
-                this.holding[side] = target;
-                this.state = "Holding";
-                this.facing = direction;
-              }
-            }
-          }
-          break;
-      }
-    });
-    this.scene.input.keyboard?.on("keyup", (event: KeyboardEvent) => {
-      switch (event.key) {
-        case "W":
-        case "w":
-        case "ArrowUp":
-          this.moving = this.moving.filter((direction) => direction !== "up");
-          if (this.moving[0]) this.move();
-          break;
-        case "A":
-        case "a":
-        case "ArrowLeft":
-          this.moving = this.moving.filter((direction) => direction !== "left");
-          if (this.moving[0]) this.move();
-          break;
-        case "S":
-        case "s":
-        case "ArrowDown":
-          this.moving = this.moving.filter((direction) => direction !== "down");
-          if (this.moving[0]) this.move();
-          break;
-        case "D":
-        case "d":
-        case "ArrowRight":
-          this.moving = this.moving.filter(
-            (direction) => direction !== "right"
-          );
-          if (this.moving[0]) this.move();
-          break;
-        case "Shift":
-          if (this.state === "Holding") {
-            this.state = "Idle";
-          }
-          this.holding = Object.assign({}, allCardinalsNull);
-          break;
-      }
-    });
-  }
-
-  resetToOrigin() {
-    const { startPosition } = this;
-
-    this.holding = Object.assign({}, allCardinalsNull);
-    this.moving = [];
-    this.forceMovement = Object.assign({}, allDirectionsFalse);
-    this.state = "Idle";
-
-    const findEmptySpace = (row: number, col: number, checked: Set<string>) => {
-      const letterInPlace = this.scene.allLetters.get(`${row},${col}`);
-      if (!letterInPlace) {
+        if ((isPush || isPull) && oneIn(80) && this.movementTween) {
+          this.emitDrops();
+        }
+      },
+      onComplete: () => {
         this.row = row;
         this.col = col;
-        this.x = col * CELL_WIDTH + CELL_WIDTH / 2;
-        this.y = row * CELL_HEIGHT + CELL_HEIGHT / 2;
-      } else {
-        checked.add(`${row},${col}`);
-        const positions = getAdjacentTiles(row, col);
-        for (const position of Object.values(positions).sort(
-          () => Math.random() - 0.5
-        )) {
-          if (checked.has(`${position.row},${position.col}`)) continue;
-          findEmptySpace(position.row, position.col, checked);
-          break;
-        }
-      }
-    };
-    findEmptySpace(startPosition.row, startPosition.col, new Set());
+        this.update();
+        this.movementTween = null;
+
+        if (onMovementComplete) onMovementComplete(row, col);
+      },
+    });
   }
 
-  update() {
-    this.setDepth(this.row + 3);
-    this.shadow.setDepth(this.row + 1);
-    this.generateShadow();
-    if (this.moving[0]) this.lastMove = this.moving[0];
+  isInViewport() {
+    const { left, right, top, bottom } = this.scene.cameras.main.worldView;
+    if (
+      this.x < left - CELL_WIDTH ||
+      this.x > right + CELL_WIDTH ||
+      this.y < top - CELL_HEIGHT ||
+      this.y > bottom + CELL_HEIGHT
+    ) {
+      return false;
+    } else return true;
+  }
 
+  rotate(duration: number, pull: boolean) {
     let target = 0;
-    if (this.lastMove === "up") {
-      target = 0;
-    } else if (this.lastMove === "right") {
-      target = 90;
-    } else if (this.lastMove === "down") {
-      target = 180;
-    } else if (this.lastMove === "left") {
-      target = -90;
+    if (this.facing === "up") {
+      target = pull ? 180 : 0;
+    } else if (this.facing === "right") {
+      target = pull ? -90 : 90;
+    } else if (this.facing === "down") {
+      target = pull ? 0 : 180;
+    } else if (this.facing === "left") {
+      target = pull ? 90 : -90;
     }
     const startAngle = this.angle;
     if (startAngle === -90 && target === 180) {
@@ -266,68 +160,72 @@ export class Player extends Phaser.GameObjects.Sprite {
       this.state !== "Pulling"
     ) {
       this.rotationTween = this.scene.tweens.add({
-        targets: this,
+        targets: [this, this.hands],
         angle: target,
-        duration: this.moveDuration,
+
+        duration: duration * 0.5,
         ease: "Sine.Out",
         onStart: () => {
-          console.log(startAngle, target);
           if (startAngle === 0 && target === 270) {
             this.setAngle(360);
+            this.hands.setAngle(360);
           } else if (startAngle === 180 && target === -90) {
             this.setAngle(-180);
+            this.hands.setAngle(-180);
           }
         },
-        onUpdate: () => console.log(this.angle),
         onComplete: () => {
           this.setAngle(target);
-          if (this.angle === -180) this.setAngle(180);
+          if (this.angle === -180) {
+            this.setAngle(180);
+            this.hands.setAngle(180);
+          }
           this.rotationTween = null;
         },
       });
     }
-
-    switch (this.state) {
-      case "Idle":
-        {
-          this.alpha = 1;
-          this.hasReset = false;
-        }
-        break;
-    }
-
-    for (const [side, holding] of Object.entries(this.holding)) {
-      if (holding) {
-        const direction = cardinalToDirection(side as Cardinal);
-        this.lastMove = direction;
-        break;
-      }
-    }
-
-    let longestWord = "";
-    for (const word of this.validWords) {
-      if (word.letters.length > longestWord.length) {
-        longestWord = word.letters;
-      }
-    }
-    this.longestWord = longestWord;
   }
-  detectAdjacent() {
-    const { allWalls, allLetters } = this.scene;
-    const { top, bottom, left, right } = getAdjacentTiles(this.row, this.col);
-    this.adjacent = {
-      top:
-        allWalls.get(`${top.row},${top.col}`) ??
-        allLetters.get(`${top.row},${top.col}`),
-      bottom:
-        allWalls.get(`${bottom.row},${bottom.col}`) ??
-        allLetters.get(`${bottom.row},${bottom.col}`),
-      right:
-        allWalls.get(`${right.row},${right.col}`) ??
-        allLetters.get(`${right.row},${right.col}`),
-      left:
-        allWalls.get(`${left.row},${left.col}`) ??
-        allLetters.get(`${left.row},${left.col}`),
-    };
+  emitDrops(speed = 175, lifespan = 400) {
+    if (!this.particles?.active) {
+      let x = this.x;
+      let y = this.y;
+      if (this.facing === "up") {
+        y += 16;
+      } else if (this.facing === "down") {
+        y -= 16;
+      } else if (this.facing === "left") {
+        x += 16;
+      } else if (this.facing === "right") {
+        x -= 16;
+      }
+      this.particles = this.scene.add.particles(x, y, "player", {
+        frame: "white",
+        color: [0xffffff, 0x00aaff, 0x44eeff],
+        // color: [0xffffff],
+        colorEase: "quad.out",
+        lifespan,
+        // angle: { min: -100, max: -80 },
+        scale: { start: 0.25, end: 0, ease: "sine.out" },
+        speed,
+
+        advance: 1500,
+        frequency: 150,
+        deathCallback: () => {
+          this.particles?.stop();
+          delete this.particles;
+        },
+        // blendMode: "ADD",
+      });
+      this.particles.setDepth(this.row + 2);
+    }
+  }
+
+  remove() {
+    this.scene.playersByID.delete(this.id);
+    this.movementTween?.destroy();
+    this.rotationTween?.destroy();
+    this.shadow.destroy();
+    this.hands.destroy();
+    this.destroy();
   }
 }

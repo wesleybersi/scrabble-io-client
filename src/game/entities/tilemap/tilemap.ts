@@ -6,13 +6,13 @@ export default class BasicTilemap {
   floorMap: Phaser.Tilemaps.Tilemap;
   floorTiles!: Phaser.Tilemaps.Tileset;
   floor!: Phaser.Tilemaps.TilemapLayer;
-  constructor(scene: MainScene) {
+  constructor(scene: MainScene, rows: number, cols: number) {
     this.scene = scene as MainScene;
     this.floorMap = scene.make.tilemap({
       tileWidth: CELL_WIDTH,
       tileHeight: CELL_HEIGHT,
-      width: scene.colCount,
-      height: scene.rowCount,
+      width: cols,
+      height: rows,
     });
 
     const floorTiles = this.floorMap.addTilesetImage("floor");
@@ -39,14 +39,16 @@ export default class BasicTilemap {
   placeEmptyFloorTile(col: number, row: number) {
     const newTile = this.floor.putTileAt(0, col, row);
     if (!newTile) return;
-    newTile.alpha = Math.max(Math.random() * 0.1, 0.05);
+    newTile.alpha = Math.max(Math.random() * 0.05) + 0.1;
+    newTile.alpha = 0.05;
+    newTile.tint = 0x576a78;
   }
 
   placeInitialTiles() {
-    const doubleWord = { chance: 250, color: 0xad4052 };
-    const tripleWord = { chance: 500, color: 0xefc350 };
-    const doubleLetter = { chance: 250, color: 0x489ad9 };
-    const tripleLetter = { chance: 500, color: 0x6de36b };
+    // const doubleWord = { chance: 250, color: 0xad4052 };
+    // const tripleWord = { chance: 500, color: 0xefc350 };
+    // const doubleLetter = { chance: 250, color: 0x489ad9 };
+    // const tripleLetter = { chance: 500, color: 0x6de36b };
 
     this.floor.forEachTile((tile) => {
       // if (!Math.floor(Math.random() * doubleWord.chance)) {

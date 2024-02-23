@@ -19,6 +19,10 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src", "src/game/entities/.ts"],
+  "include": [
+    "src",
+    "src/game/entities/.ts",
+    "../server/src/entities/Game/Scrabble/Validator/Dictionary/dictionaries"
+  ],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

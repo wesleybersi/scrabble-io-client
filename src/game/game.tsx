@@ -26,13 +26,16 @@ const Game = () => {
       },
       zoom: window.devicePixelRatio,
       parent: "phaser-game",
-      backgroundColor: "#2E4C5B",
+      backgroundColor: "#efefef",
+      // backgroundColor: "#2E4C5B",
+      // backgroundColor: "#1B262F",
+      // backgroundColor: "#afafaf",
       scene: [LandingScene, MainScene, LoadingScene],
 
       render: {
         antialias: true,
         pixelArt: false,
-        roundPixels: false,
+        roundPixels: true,
       },
     };
 

@@ -33,4 +33,13 @@ export default function autoTile(this: Wall) {
       this.connectedTo.right
     )
   );
+
+  this.shadowGraphic?.setFrame(
+    adjacentToTileIndex(
+      this.connectedTo.top,
+      this.connectedTo.bottom,
+      this.connectedTo.left,
+      this.connectedTo.right
+    )
+  );
 }

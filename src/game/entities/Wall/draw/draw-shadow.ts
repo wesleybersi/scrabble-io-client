@@ -1,25 +1,18 @@
-import Letter from "../../Letter/letter";
+import { CELL_HEIGHT, CELL_WIDTH } from "../../../scenes/Main/constants";
 import Wall from "../wall";
 
 export default function drawShadow(this: Wall) {
-  return;
-  const { scene, connectedTo, adjacent } = this;
-  const { cellHeight } = this.scene;
-  const letterBelow = adjacent.bottom && adjacent.bottom instanceof Letter;
-  if (!this.shadow) {
-    this.shadow = this.scene.add.sprite(
-      this.x,
-      this.y + cellHeight - 6,
-      letterBelow ? "shadow-6" : "shadow-12"
-    );
+  // return;
+  if (!this.shadowGraphic) {
+    this.shadowGraphic = this.scene.add.sprite(this.x, this.y, "blocks");
   }
-  this.shadow.setTexture(letterBelow ? "shadow-6" : "shadow-12");
-  this.shadow.x = this.x;
-  this.shadow.y =
-    adjacent.bottom && adjacent.bottom instanceof Letter
-      ? this.y + cellHeight - 6
-      : this.y + cellHeight + 2;
-  this.shadow.alpha = 0.2;
-
-  this.shadow.setDepth(letterBelow ? this.row + 2 : this.row);
+  const xOffset = 8;
+  const yOffset = 8;
+  this.shadowGraphic.setScale(1, 1);
+  this.shadowGraphic.setTint(0x000000);
+  this.shadowGraphic.x = this.x + xOffset;
+  this.shadowGraphic.y = this.y + CELL_HEIGHT - CELL_HEIGHT + yOffset;
+  this.shadowGraphic.alpha = 0.15;
+  this.shadowGraphic.setDepth(this.row + 2);
+  this.autoTile();
 }
